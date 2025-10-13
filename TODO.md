@@ -13,4 +13,5 @@
 - [x] Update "New Appointment" button to toggle showAddAppointmentForm
 - [x] Update "Add Medicine" button to toggle showAddMedicineForm
 - [x] Update "Create Treatment Plan" button to toggle showAddTreatmentForm
-- [ ] Test form functionality by running the app and verifying new items are added
+- [x] Test form functionality by running the app and verifying new items are added
+- [x] Push code to GitHub repository
