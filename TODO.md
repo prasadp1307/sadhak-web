@@ -15,3 +15,6 @@
 - [x] Update "Create Treatment Plan" button to toggle showAddTreatmentForm
 - [x] Test form functionality by running the app and verifying new items are added
 - [x] Push code to GitHub repository
+- [x] Setup Firebase authentication with token-based login/signup
+- [x] Setup Firebase database (free tier)
+- [x] Integrate authentication into the app with logout functionality
