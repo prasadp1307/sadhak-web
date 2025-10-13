@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight } from "lucide-react";
+import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from './AuthProvider';
+import { logOut } from '../lib/auth';
+import { useRouter } from 'next/navigation';
 
 interface Patient {
   id: number;
@@ -45,8 +48,19 @@ interface Treatment {
 }
 
 export default function SadhakAyurvedApp() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
+
+  const handleLogout = async () => {
+    try {
+      await logOut();
+      router.push('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
   
   // Dynamic state for patients
   const [patients, setPatients] = useState<Patient[]>([
@@ -799,6 +813,9 @@ export default function SadhakAyurvedApp() {
             </button>
             <button className="rounded-lg p-2 text-stone-700 transition-colors hover:bg-white/50">
               <Settings size={20} />
+            </button>
+            <button onClick={handleLogout} className="rounded-lg p-2 text-stone-700 transition-colors hover:bg-white/50">
+              <LogOut size={20} />
             </button>
             <div className="flex items-center space-x-2">
               <div className="relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-amber-400 bg-gradient-to-br from-emerald-600 to-teal-600 text-sm font-bold text-white shadow-md">
