@@ -44,6 +44,7 @@ export default function AuthPage() {
               <Input
                 id="email"
                 type="email"
+                placeholder="example@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -54,6 +55,7 @@ export default function AuthPage() {
               <Input
                 id="password"
                 type="password"
+                placeholder="password123"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
