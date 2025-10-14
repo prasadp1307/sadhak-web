@@ -25,6 +25,7 @@ A comprehensive web application for managing Ayurvedic clinics, built with Next.
 
 - Node.js 18+ installed
 - npm or yarn package manager
+- Firebase account (for authentication)
 
 ### Installation
 
@@ -33,12 +34,33 @@ A comprehensive web application for managing Ayurvedic clinics, built with Next.
 npm install
 ```
 
-2. Run the development server:
+2. Set up Firebase:
+   - Follow the instructions in `FIREBASE_SETUP_GUIDE.md`
+   - Create a `.env.local` file with your Firebase credentials
+
+3. Run the development server:
 ```bash
 npm run dev
 ```
 
-3. Open [http://localhost:3000](http://localhost:3000) in your browser
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+### Creating Dummy Users
+
+To test authentication, create dummy users:
+
+```bash
+npx tsx scripts/create-dummy-users.ts
+```
+
+This creates 3 test users:
+- user1@sadhak.com (password: password123)
+- user2@sadhak.com (password: password123)
+- user3@sadhak.com (password: password123)
+
+**View users at:** http://localhost:3000/admin/users
+
+For detailed instructions, see `DUMMY_USERS_GUIDE.md`
 
 ### Build for Production
 
@@ -61,6 +83,19 @@ npm start
 │   └── utils.ts            # Utility functions
 └── public/                 # Static assets
 ```
+
+## Authentication
+
+The application includes Firebase Authentication with:
+- Email/Password sign up and sign in
+- Protected routes
+- User session management
+- Admin user management page
+
+**Auth Pages:**
+- Sign In/Sign Up: http://localhost:3000/auth
+- User Management: http://localhost:3000/admin/users
+- Firebase Test: http://localhost:3000/test-firebase
 
 ## Features Overview
 
