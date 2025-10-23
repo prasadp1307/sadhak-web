@@ -1,9 +1,5 @@
-'use client';
-
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
-import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 
 export default function ServerError() {
   return (
@@ -21,21 +17,6 @@ export default function ServerError() {
         <CardContent className="p-6 space-y-4">
           <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
             We're experiencing technical difficulties. Our team has been notified and is working to fix the issue.
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button
-              onClick={() => window.location.reload()}
-              className="w-full bg-red-600 hover:bg-red-700 text-white"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Page
-            </Button>
-            <Link href="/" className="w-full">
-              <Button variant="outline" className="w-full">
-                <Home className="mr-2 h-4 w-4" />
-                Go Home
-              </Button>
-            </Link>
           </div>
         </CardContent>
       </Card>
