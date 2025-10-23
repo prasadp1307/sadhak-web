@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight, LogOut } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useAuth } from './AuthProvider';
 import { logOut } from '../lib/auth';
@@ -16,8 +17,13 @@ interface Patient {
   id: number;
   name: string;
   age: number;
+  address: string;
+  phoneNumber: string;
   dosha: string;
   condition: string;
+  symptoms: string;
+  treatmentPlan: string;
+  payment: string;
   lastVisit: string;
   status: string;
 }
@@ -64,10 +70,10 @@ export default function SadhakAyurvedApp() {
   
   // Dynamic state for patients
   const [patients, setPatients] = useState<Patient[]>([
-    { id: 1, name: "Rajesh Kumar", age: 45, dosha: "Vata-Pitta", condition: "Joint Pain", lastVisit: "2025-01-15", status: "Active" },
-    { id: 2, name: "Priya Sharma", age: 32, dosha: "Kapha", condition: "Digestive Issues", lastVisit: "2025-01-14", status: "Active" },
-    { id: 3, name: "Amit Patel", age: 58, dosha: "Pitta", condition: "Hypertension", lastVisit: "2025-01-13", status: "Follow-up" },
-    { id: 4, name: "Lakshmi Reddy", age: 28, dosha: "Vata", condition: "Stress & Anxiety", lastVisit: "2025-01-12", status: "Active" },
+    { id: 1, name: "Rajesh Kumar", age: 45, address: "123 MG Road, Bangalore", phoneNumber: "+91-9876543210", dosha: "Vata-Pitta", condition: "Joint Pain", symptoms: "Pain in knees and elbows", treatmentPlan: "Abhyanga and herbal supplements", payment: "₹500", lastVisit: "2025-01-15", status: "Active" },
+    { id: 2, name: "Priya Sharma", age: 32, address: "456 Brigade Road, Bangalore", phoneNumber: "+91-9876543211", dosha: "Kapha", condition: "Digestive Issues", symptoms: "Bloating and indigestion", treatmentPlan: "Triphala and dietary changes", payment: "₹400", lastVisit: "2025-01-14", status: "Active" },
+    { id: 3, name: "Amit Patel", age: 58, address: "789 Residency Road, Bangalore", phoneNumber: "+91-9876543212", dosha: "Pitta", condition: "Hypertension", symptoms: "High blood pressure", treatmentPlan: "Rasayana therapy", payment: "₹600", lastVisit: "2025-01-13", status: "Follow-up" },
+    { id: 4, name: "Lakshmi Reddy", age: 28, address: "321 Commercial Street, Bangalore", phoneNumber: "+91-9876543213", dosha: "Vata", condition: "Stress & Anxiety", symptoms: "Insomnia and restlessness", treatmentPlan: "Ashwagandha and meditation", payment: "₹450", lastVisit: "2025-01-12", status: "Active" },
   ]);
 
   // Dynamic state for appointments
@@ -99,26 +105,35 @@ export default function SadhakAyurvedApp() {
   const [showAddMedicineForm, setShowAddMedicineForm] = useState(false);
   const [showAddTreatmentForm, setShowAddTreatmentForm] = useState(false);
 
+
+
   // Form input states
-  const [newPatient, setNewPatient] = useState({ name: "", age: "", dosha: "", condition: "" });
+  const [newPatient, setNewPatient] = useState({ name: "", age: "", address: "", phoneNumber: "", dosha: "", condition: "", symptoms: "", treatmentPlan: "", payment: "" });
   const [newAppointment, setNewAppointment] = useState({ time: "", patient: "", type: "", duration: "" });
   const [newMedicine, setNewMedicine] = useState({ name: "", category: "", stock: "", price: "" });
   const [newTreatment, setNewTreatment] = useState({ name: "", description: "", duration: "", category: "" });
 
+
+
   // Form handlers
   const handleAddPatient = () => {
-    if (newPatient.name && newPatient.age && newPatient.dosha && newPatient.condition) {
+    if (newPatient.name && newPatient.age && newPatient.address && newPatient.phoneNumber && newPatient.dosha && newPatient.condition) {
       const patient: Patient = {
         id: patients.length + 1,
         name: newPatient.name,
         age: parseInt(newPatient.age),
+        address: newPatient.address,
+        phoneNumber: newPatient.phoneNumber,
         dosha: newPatient.dosha,
         condition: newPatient.condition,
+        symptoms: newPatient.symptoms,
+        treatmentPlan: newPatient.treatmentPlan,
+        payment: newPatient.payment,
         lastVisit: new Date().toISOString().split('T')[0],
         status: "Active"
       };
       setPatients([...patients, patient]);
-      setNewPatient({ name: "", age: "", dosha: "", condition: "" });
+      setNewPatient({ name: "", age: "", address: "", phoneNumber: "", dosha: "", condition: "", symptoms: "", treatmentPlan: "", payment: "" });
       setShowAddPatientForm(false);
     }
   };
@@ -169,6 +184,8 @@ export default function SadhakAyurvedApp() {
     }
   };
 
+
+
   const dashboardStats = [
     { title: "Total Patients", value: patients.length.toString(), change: "+12% from last month", icon: Users, color: "text-emerald-600", bgColor: "bg-emerald-50" },
     { title: "Today's Appointments", value: appointments.length.toString(), change: `${appointments.length} scheduled`, icon: Calendar, color: "text-amber-600", bgColor: "bg-amber-50" },
@@ -189,7 +206,7 @@ export default function SadhakAyurvedApp() {
     <div className="space-y-6">
       <Card className="border-2 border-amber-300 bg-gradient-to-r from-amber-100 via-orange-100 to-emerald-100 shadow-lg">
         <CardContent className="p-6">
-          <h2 className="text-2xl font-black text-stone-800">Welcome, Dr. Vaidya</h2>
+          <h2 className="text-2xl font-black text-stone-800">Welcome, Vd. Pratiksha Sonawane</h2>
           <p className="text-sm font-medium text-amber-700">आपका दिन शुभ हो | Today&apos;s Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </CardContent>
       </Card>
@@ -316,6 +333,24 @@ export default function SadhakAyurvedApp() {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="patient-address">Address</Label>
+                <Input
+                  id="patient-address"
+                  placeholder="Enter address"
+                  value={newPatient.address}
+                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="patient-phone">Phone Number</Label>
+                <Input
+                  id="patient-phone"
+                  placeholder="Enter phone number"
+                  value={newPatient.phoneNumber}
+                  onChange={(e) => setNewPatient({ ...newPatient, phoneNumber: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="patient-dosha">Dosha Type</Label>
                 <Select value={newPatient.dosha} onValueChange={(value) => setNewPatient({ ...newPatient, dosha: value })}>
                   <SelectTrigger>
@@ -410,10 +445,10 @@ export default function SadhakAyurvedApp() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm" className="text-emerald-600 hover:bg-emerald-50">
+                        <Button variant="ghost" size="sm" className="text-emerald-600 hover:bg-emerald-50" onClick={() => window.open(`/patient/${patient.id}`, '_blank')}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-amber-600 hover:bg-amber-50">
+                        <Button variant="ghost" size="sm" className="text-amber-600 hover:bg-amber-50" onClick={() => window.open(`/patient/${patient.id}/edit`, '_blank')}>
                           <Edit className="h-4 w-4" />
                         </Button>
                       </div>
@@ -822,7 +857,7 @@ export default function SadhakAyurvedApp() {
                 <span>DR</span>
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-bold text-stone-800">Dr. Vaidya</p>
+                <p className="text-sm font-bold text-stone-800">Vd. Pratiksha Sonawane</p>
                 <p className="text-xs font-medium text-amber-700">आयुर्वेदिक चिकित्सक</p>
               </div>
             </div>
@@ -852,6 +887,8 @@ export default function SadhakAyurvedApp() {
           {activeSection === "reports" && renderReports()}
         </main>
       </div>
+
+
     </div>
   );
 }
