@@ -1,6 +1,8 @@
+import Link from 'next/link';
+
 export function generateStaticParams() {
   // Mock patient IDs for static generation
-  const patientIds = ['1', '2', '3', '4'];
+  const patientIds = ['1', '2', '3', '4', '5'];
   return patientIds.map((id) => ({
     id: id,
   }));
@@ -9,10 +11,10 @@ export function generateStaticParams() {
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
   // Mock patient data for static generation
   const mockPatients = [
-    { id: 1, name: "Rajesh Kumar", age: 45, address: "123 MG Road, Bangalore", phoneNumber: "+91-9876543210", dosha: "Vata-Pitta", condition: "Joint Pain", symptoms: "Pain in knees and elbows", treatmentPlan: "Abhyanga and herbal supplements", payment: "₹500", lastVisit: "2025-01-15", status: "Active" },
-    { id: 2, name: "Priya Sharma", age: 32, address: "456 Brigade Road, Bangalore", phoneNumber: "+91-9876543211", dosha: "Kapha", condition: "Digestive Issues", symptoms: "Bloating and indigestion", treatmentPlan: "Triphala and dietary changes", payment: "₹400", lastVisit: "2025-01-14", status: "Active" },
-    { id: 3, name: "Amit Patel", age: 58, address: "789 Residency Road, Bangalore", phoneNumber: "+91-9876543212", dosha: "Pitta", condition: "Hypertension", symptoms: "High blood pressure", treatmentPlan: "Rasayana therapy", payment: "₹600", lastVisit: "2025-01-13", status: "Follow-up" },
-    { id: 4, name: "Lakshmi Reddy", age: 28, address: "321 Commercial Street, Bangalore", phoneNumber: "+91-9876543213", dosha: "Vata", condition: "Stress & Anxiety", symptoms: "Insomnia and restlessness", treatmentPlan: "Ashwagandha and meditation", payment: "₹450", lastVisit: "2025-01-12", status: "Active" },
+    { id: 1, name: "Rajesh Kumar", age: 45, address: "123 MG Road, Bangalore", phoneNumber: "+91-9876543210", job: "Engineer", reference: "Dr. Sharma", symptoms: "Pain in knees and elbows", treatmentPlan: "Abhyanga and herbal supplements", payment: "₹500", lastVisit: "2025-01-15", status: "Active", nadiParikshan: "Not provided", condition: "Not provided", ho: "Not provided", treatment: "Not provided", parikshan: "Not provided" },
+    { id: 2, name: "Priya Sharma", age: 32, address: "456 Brigade Road, Bangalore", phoneNumber: "+91-9876543211", job: "Teacher", reference: "Online Search", symptoms: "Bloating and indigestion", treatmentPlan: "Triphala and dietary changes", payment: "₹400", lastVisit: "2025-01-14", status: "Active", nadiParikshan: "Not provided", condition: "Not provided", ho: "Not provided", treatment: "Not provided", parikshan: "Not provided" },
+    { id: 3, name: "Amit Patel", age: 58, address: "789 Residency Road, Bangalore", phoneNumber: "+91-9876543212", job: "Businessman", reference: "Friend", symptoms: "High blood pressure", treatmentPlan: "Rasayana therapy", payment: "₹600", lastVisit: "2025-01-13", status: "Follow-up", nadiParikshan: "Not provided", condition: "Not provided", ho: "Not provided", treatment: "Not provided", parikshan: "Not provided" },
+    { id: 4, name: "Lakshmi Reddy", age: 28, address: "321 Commercial Street, Bangalore", phoneNumber: "+91-9876543213", job: "Doctor", reference: "Hospital", symptoms: "Insomnia and restlessness", treatmentPlan: "Ashwagandha and meditation", payment: "₹450", lastVisit: "2025-01-12", status: "Active", nadiParikshan: "Not provided", condition: "Not provided", ho: "Not provided", treatment: "Not provided", parikshan: "Not provided" },
   ];
 
   const patientId = parseInt(params.id);
@@ -83,12 +85,12 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-stone-700">Dosha Type</label>
-                  <span className="inline-block rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700 ml-2">{patient.dosha}</span>
+                  <label className="text-sm font-medium text-stone-700">Job</label>
+                  <p className="text-stone-700">{patient.job}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-stone-700">Condition</label>
-                  <p className="text-stone-700">{patient.condition}</p>
+                  <label className="text-sm font-medium text-stone-700">Reference</label>
+                  <p className="text-stone-700">{patient.reference}</p>
                 </div>
               </div>
             </div>
@@ -110,26 +112,54 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                   <label className="text-sm font-medium text-stone-700">Payment</label>
                   <p className="font-semibold text-emerald-700">{patient.payment}</p>
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-700">Last Visit</label>
+                  <p className="text-stone-700">{patient.lastVisit}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-stone-700">Status</label>
+                  <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                    {patient.status}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
             <div className="border-b border-amber-100 bg-gradient-to-r from-teal-50 to-emerald-50 p-4 -m-6 mb-6 rounded-t-lg">
-              <h3 className="text-stone-800 font-semibold">Visit History</h3>
+              <h3 className="text-stone-800 font-semibold">Ayurvedic Assessment</h3>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="space-y-4">
               <div>
-                <p className="text-sm text-stone-600">Last Visit</p>
-                <p className="font-semibold text-stone-800">{patient.lastVisit}</p>
+                <label className="text-sm font-medium text-stone-700">Nadi Parikshan</label>
+                <p className="text-stone-700">{patient.nadiParikshan}</p>
               </div>
               <div>
-                <p className="text-sm text-stone-600">Status</p>
-                <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                  {patient.status}
-                </span>
+                <label className="text-sm font-medium text-stone-700">Condition (Lakshana)</label>
+                <p className="text-stone-700">{patient.condition}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700">H/O</label>
+                <p className="text-stone-700">{patient.ho}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700">Treatment</label>
+                <p className="text-stone-700">{patient.treatment}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-stone-700">Parikshan</label>
+                <p className="text-stone-700">{patient.parikshan}</p>
               </div>
             </div>
+          </div>
+
+          <div className="flex justify-end space-x-4">
+            <Link href={`/patient/${patient.id}/edit`}>
+              <button className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                Edit Patient
+              </button>
+            </Link>
           </div>
         </div>
       </main>

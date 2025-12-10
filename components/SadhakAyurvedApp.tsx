@@ -19,8 +19,8 @@ interface Patient {
   age: number;
   address: string;
   phoneNumber: string;
-  dosha: string;
-  condition: string;
+  job: string;
+  reference: string;
   symptoms: string;
   treatmentPlan: string;
   payment: string;
@@ -70,10 +70,10 @@ export default function SadhakAyurvedApp() {
   
   // Dynamic state for patients
   const [patients, setPatients] = useState<Patient[]>([
-    { id: 1, name: "Rajesh Kumar", age: 45, address: "123 MG Road, Bangalore", phoneNumber: "+91-9876543210", dosha: "Vata-Pitta", condition: "Joint Pain", symptoms: "Pain in knees and elbows", treatmentPlan: "Abhyanga and herbal supplements", payment: "₹500", lastVisit: "2025-01-15", status: "Active" },
-    { id: 2, name: "Priya Sharma", age: 32, address: "456 Brigade Road, Bangalore", phoneNumber: "+91-9876543211", dosha: "Kapha", condition: "Digestive Issues", symptoms: "Bloating and indigestion", treatmentPlan: "Triphala and dietary changes", payment: "₹400", lastVisit: "2025-01-14", status: "Active" },
-    { id: 3, name: "Amit Patel", age: 58, address: "789 Residency Road, Bangalore", phoneNumber: "+91-9876543212", dosha: "Pitta", condition: "Hypertension", symptoms: "High blood pressure", treatmentPlan: "Rasayana therapy", payment: "₹600", lastVisit: "2025-01-13", status: "Follow-up" },
-    { id: 4, name: "Lakshmi Reddy", age: 28, address: "321 Commercial Street, Bangalore", phoneNumber: "+91-9876543213", dosha: "Vata", condition: "Stress & Anxiety", symptoms: "Insomnia and restlessness", treatmentPlan: "Ashwagandha and meditation", payment: "₹450", lastVisit: "2025-01-12", status: "Active" },
+    { id: 1, name: "Rajesh Kumar", age: 45, address: "123 MG Road, Bangalore", phoneNumber: "+91-9876543210", job: "Engineer", reference: "Dr. Sharma", symptoms: "Pain in knees and elbows", treatmentPlan: "Abhyanga and herbal supplements", payment: "₹500", lastVisit: "2025-01-15", status: "Active" },
+    { id: 2, name: "Priya Sharma", age: 32, address: "456 Brigade Road, Bangalore", phoneNumber: "+91-9876543211", job: "Teacher", reference: "Online Search", symptoms: "Bloating and indigestion", treatmentPlan: "Triphala and dietary changes", payment: "₹400", lastVisit: "2025-01-14", status: "Active" },
+    { id: 3, name: "Amit Patel", age: 58, address: "789 Residency Road, Bangalore", phoneNumber: "+91-9876543212", job: "Businessman", reference: "Friend", symptoms: "High blood pressure", treatmentPlan: "Rasayana therapy", payment: "₹600", lastVisit: "2025-01-13", status: "Follow-up" },
+    { id: 4, name: "Lakshmi Reddy", age: 28, address: "321 Commercial Street, Bangalore", phoneNumber: "+91-9876543213", job: "Doctor", reference: "Hospital", symptoms: "Insomnia and restlessness", treatmentPlan: "Ashwagandha and meditation", payment: "₹450", lastVisit: "2025-01-12", status: "Active" },
   ]);
 
   // Dynamic state for appointments
@@ -108,7 +108,7 @@ export default function SadhakAyurvedApp() {
 
 
   // Form input states
-  const [newPatient, setNewPatient] = useState({ name: "", age: "", address: "", phoneNumber: "", dosha: "", condition: "", symptoms: "", treatmentPlan: "", payment: "" });
+  const [newPatient, setNewPatient] = useState({ name: "", age: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "", payment: "" });
   const [newAppointment, setNewAppointment] = useState({ time: "", patient: "", type: "", duration: "" });
   const [newMedicine, setNewMedicine] = useState({ name: "", category: "", stock: "", price: "" });
   const [newTreatment, setNewTreatment] = useState({ name: "", description: "", duration: "", category: "" });
@@ -117,15 +117,15 @@ export default function SadhakAyurvedApp() {
 
   // Form handlers
   const handleAddPatient = () => {
-    if (newPatient.name && newPatient.age && newPatient.address && newPatient.phoneNumber && newPatient.dosha && newPatient.condition) {
+    if (newPatient.name && newPatient.age && newPatient.address && newPatient.phoneNumber && newPatient.job && newPatient.reference) {
       const patient: Patient = {
         id: patients.length + 1,
         name: newPatient.name,
         age: parseInt(newPatient.age),
         address: newPatient.address,
         phoneNumber: newPatient.phoneNumber,
-        dosha: newPatient.dosha,
-        condition: newPatient.condition,
+        job: newPatient.job,
+        reference: newPatient.reference,
         symptoms: newPatient.symptoms,
         treatmentPlan: newPatient.treatmentPlan,
         payment: newPatient.payment,
@@ -133,7 +133,7 @@ export default function SadhakAyurvedApp() {
         status: "Active"
       };
       setPatients([...patients, patient]);
-      setNewPatient({ name: "", age: "", address: "", phoneNumber: "", dosha: "", condition: "", symptoms: "", treatmentPlan: "", payment: "" });
+      setNewPatient({ name: "", age: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "", payment: "" });
       setShowAddPatientForm(false);
     }
   };
@@ -244,8 +244,8 @@ export default function SadhakAyurvedApp() {
                 <div key={patient.id} className="flex items-center justify-between p-4 transition-colors hover:bg-amber-50/50">
                   <div className="flex-1">
                     <p className="font-semibold text-stone-800">{patient.name}</p>
-                    <p className="text-sm text-stone-600">{patient.age} years • {patient.dosha}</p>
-                    <p className="text-xs text-stone-500">{patient.condition}</p>
+                    <p className="text-sm text-stone-600">{patient.age} years • {patient.job}</p>
+                    <p className="text-xs text-stone-500">{patient.reference}</p>
                   </div>
                   <div className="text-right">
                     <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
@@ -351,28 +351,21 @@ export default function SadhakAyurvedApp() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="patient-dosha">Dosha Type</Label>
-                <Select value={newPatient.dosha} onValueChange={(value) => setNewPatient({ ...newPatient, dosha: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select dosha" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Vata">Vata</SelectItem>
-                    <SelectItem value="Pitta">Pitta</SelectItem>
-                    <SelectItem value="Kapha">Kapha</SelectItem>
-                    <SelectItem value="Vata-Pitta">Vata-Pitta</SelectItem>
-                    <SelectItem value="Pitta-Kapha">Pitta-Kapha</SelectItem>
-                    <SelectItem value="Vata-Kapha">Vata-Kapha</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="patient-job">Job</Label>
+                <Input
+                  id="patient-job"
+                  placeholder="Enter job"
+                  value={newPatient.job}
+                  onChange={(e) => setNewPatient({ ...newPatient, job: e.target.value })}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="patient-condition">Condition</Label>
+                <Label htmlFor="patient-reference">Reference</Label>
                 <Input
-                  id="patient-condition"
-                  placeholder="Enter condition"
-                  value={newPatient.condition}
-                  onChange={(e) => setNewPatient({ ...newPatient, condition: e.target.value })}
+                  id="patient-reference"
+                  placeholder="Enter reference"
+                  value={newPatient.reference}
+                  onChange={(e) => setNewPatient({ ...newPatient, reference: e.target.value })}
                 />
               </div>
             </div>
@@ -395,17 +388,7 @@ export default function SadhakAyurvedApp() {
               <Search className="absolute left-3 top-3 h-4 w-4 text-stone-400" />
               <Input placeholder="Search patients..." className="border-amber-200 pl-9" />
             </div>
-            <Select>
-              <SelectTrigger className="w-full border-amber-200 md:w-48">
-                <SelectValue placeholder="Dosha Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Doshas</SelectItem>
-                <SelectItem value="vata">Vata</SelectItem>
-                <SelectItem value="pitta">Pitta</SelectItem>
-                <SelectItem value="kapha">Kapha</SelectItem>
-              </SelectContent>
-            </Select>
+
           </div>
         </CardContent>
       </Card>
@@ -417,8 +400,8 @@ export default function SadhakAyurvedApp() {
               <thead className="bg-gradient-to-r from-amber-50 to-emerald-50">
                 <tr>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Patient Details</th>
-                  <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Dosha Type</th>
-                  <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Condition</th>
+                  <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Job</th>
+                  <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Reference</th>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Last Visit</th>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Status</th>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Actions</th>
@@ -433,10 +416,8 @@ export default function SadhakAyurvedApp() {
                         <p className="text-sm text-stone-600">{patient.age} years</p>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-block rounded-full bg-teal-100 px-3 py-1 text-sm font-medium text-teal-700">{patient.dosha}</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-stone-700">{patient.condition}</td>
+                    <td className="px-6 py-4 text-sm text-stone-700">{patient.job}</td>
+                    <td className="px-6 py-4 text-sm text-stone-700">{patient.reference}</td>
                     <td className="px-6 py-4 text-sm text-stone-600">{patient.lastVisit}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
