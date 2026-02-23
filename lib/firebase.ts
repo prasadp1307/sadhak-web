@@ -1,78 +1,72 @@
-import { initializeApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, FirebaseApp, getApps } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 
 /**
- * Required environment variables for Firebase configuration
+ * Get Firebase configuration object from environment variables
+ * Returns undefined if required variables are missing
  */
-const REQUIRED_ENV_VARS = [
-  'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-] as const;
-
-/**
- * Validate that all required environment variables are present
- */
-const validateEnvironmentVariables = (): void => {
-  const missingVars: string[] = [];
+export const getFirebaseConfig = () => {
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   
-  for (const varName of REQUIRED_ENV_VARS) {
-    if (!process.env[varName]) {
-      missingVars.push(varName);
-    }
+  // Check for required variables
+  if (!apiKey || !authDomain || !projectId) {
+    console.warn('[Firebase Config] Missing environment variables. Firebase will not be available.');
+    console.warn('[Firebase Config] Required: NEXT_PUBLIC_FIREBASE_API_KEY, NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, NEXT_PUBLIC_FIREBASE_PROJECT_ID');
+    return null;
   }
   
-  if (missingVars.length > 0) {
-    console.error('[Firebase Config] Missing required environment variables:', missingVars.join(', '));
-    throw new Error('Missing required Firebase configuration: ' + missingVars.join(','));
-  }
-
-  // Log non-sensitive config info in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[Firebase Config] Initializing with:', {
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-  }
+  return {
+    apiKey,
+    authDomain,
+    projectId,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
+  };
 };
 
-/**
- * Get Firebase configuration object from environment variables
- */
-export const getFirebaseConfig = () => ({
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
-});
-
-// Initialize Firebase application - validates config before initialization
+// Initialize Firebase application
 let app: FirebaseApp | undefined;
 let authInstance: Auth | undefined;
 let firestoreInstance: Firestore | undefined;
 
-// Validate and initialize on module load
-validateEnvironmentVariables();
+// Initialize only if config is available
+const config = getFirebaseConfig();
 
-try {
-  app = initializeApp(getFirebaseConfig());
-  authInstance = getAuth(app);
-  firestoreInstance = getFirestore(app);
-  console.log('[Firebase] Successfully initialized');
-} catch (error) {
-  console.error('[Firebase] Initialization failed:', error instanceof Error ? error.message : 'Unknown error');
-  throw error;
+if (config) {
+  try {
+    // Only initialize if no apps already exist
+    if (getApps().length === 0) {
+      app = initializeApp(config);
+      console.log('[Firebase] Initialized successfully');
+    } else {
+      app = getApps()[0];
+      console.log('[Firebase] Using existing app');
+    }
+    authInstance = getAuth(app);
+    firestoreInstance = getFirestore(app);
+    console.log('[Firebase] Auth and Firestore ready');
+  } catch (error) {
+    console.error('[Firebase] Initialization failed:', error instanceof Error ? error.message : 'Unknown error');
+  }
+} else {
+  console.warn('[Firebase] Not initialized - missing configuration');
 }
 
 /**
- * Exported authenticated instance
+ * Exported authenticated instance (may be undefined if config missing)
  */
 export const auth = authInstance;
 
 /**
- * Exported Firestore database instance
+ * Exported Firestore database instance (may be undefined if config missing)
  */
 export const db = firestoreInstance;
+
+/**
+ * Check if Firebase is properly initialized
+ */
+export const isFirebaseInitialized = () => !!auth && !!db;

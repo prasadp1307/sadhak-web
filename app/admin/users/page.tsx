@@ -22,6 +22,12 @@ export default function UsersAdminPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!auth) {
+      console.warn('Firebase Auth not initialized');
+      setLoading(false);
+      return;
+    }
+    
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {

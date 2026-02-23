@@ -20,7 +20,7 @@ import {
   DocumentData,
   QueryConstraint
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { db, isFirebaseInitialized } from './firebase';
 
 // Collection names as constants
 export const COLLECTIONS = {
@@ -52,15 +52,23 @@ export interface PaginatedResult<T> {
 
 /**
  * Get a reference to a collection
+ * Throws error if Firebase is not initialized
  */
 export const getCollectionRef = (collectionName: CollectionName) => {
+  if (!db) {
+    throw new Error('Firestore not initialized. Check Firebase configuration.');
+  }
   return collection(db, collectionName);
 };
 
 /**
  * Get a reference to a document
+ * Throws error if Firebase is not initialized
  */
 export const getDocumentRef = (collectionName: CollectionName, documentId: string) => {
+  if (!db) {
+    throw new Error('Firestore not initialized. Check Firebase configuration.');
+  }
   return doc(db, collectionName, documentId);
 };
 

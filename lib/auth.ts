@@ -40,6 +40,9 @@ const getErrorMessage = (errorCode: string): string => {
 };
 
 export const signUp = async (email: string, password: string) => {
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Check configuration.');
+  }
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     return userCredential.user;
@@ -51,6 +54,9 @@ export const signUp = async (email: string, password: string) => {
 };
 
 export const signIn = async (email: string, password: string) => {
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Check configuration.');
+  }
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
@@ -62,6 +68,9 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const logOut = async () => {
+  if (!auth) {
+    throw new Error('Firebase Auth not initialized. Check configuration.');
+  }
   try {
     await signOut(auth);
   } catch (error: any) {
@@ -72,5 +81,9 @@ export const logOut = async () => {
 };
 
 export const onAuthStateChange = (callback: (user: User | null) => void) => {
+  if (!auth) {
+    console.warn('Firebase Auth not initialized');
+    return () => {};
+  }
   return onAuthStateChanged(auth, callback);
 };
