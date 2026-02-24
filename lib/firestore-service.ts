@@ -3,17 +3,17 @@
  * Uses modular Firebase SDK v9+
  */
 
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  getDoc, 
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
+import {
+  collection,
+  doc,
+  addDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
   limit,
   startAfter,
   QueryDocumentSnapshot,
@@ -27,10 +27,13 @@ export const COLLECTIONS = {
   PATIENTS: 'patients',
   USERS: 'users',
   APPOINTMENTS: 'appointments',
+  FOLLOW_UPS: 'followUps',
+  PAYMENTS: 'payments',
+  MEDICINES: 'medicines',
+  TREATMENTS: 'treatments',
 } as const;
 
-// Type for collection names
-export type CollectionName = typeof COLLECTIONS.PATIENTS | typeof COLLECTIONS.USERS | typeof COLLECTIONS.APPOINTMENTS;
+export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];
 
 /**
  * Base interface for all Firestore documents
@@ -39,6 +42,73 @@ export interface FirestoreDocument {
   id: string;
   createdAt?: Date;
   updatedAt?: Date;
+}
+
+export interface Patient extends FirestoreDocument {
+  name: string;
+  age: number;
+  dob?: string;
+  address: string;
+  phoneNumber: string;
+  job: string;
+  reference: string;
+  symptoms?: string;
+  treatmentPlan?: string;
+  lastVisit?: string;
+  nextAppointmentDate?: string;
+  status: string;
+  nadiParikshan?: string;
+  condition?: string;
+  ho?: string;
+  treatment?: string;
+  parikshan?: string;
+}
+
+export interface Appointment extends FirestoreDocument {
+  time: string;
+  date: string;
+  patientId: string;
+  patientName: string;
+  type: string;
+  duration: string;
+  status?: string;
+}
+
+export interface FollowUp extends FirestoreDocument {
+  patientId: string;
+  date: string;
+  notes: string;
+  reason: string;
+  status: 'Pending' | 'Completed';
+}
+
+export interface Payment extends FirestoreDocument {
+  patientId: string;
+  appointmentId?: string;
+  consultingFee: number;
+  medicineCharges: number;
+  procedureCharges: number;
+  panchakarmaCharges: number;
+  extraCharges: number;
+  totalAmount: number;
+  paidAmount: number;
+  balanceAmount: number;
+  date: string;
+}
+
+export interface Medicine extends FirestoreDocument {
+  name: string;
+  category: string;
+  stock: number;
+  lowStock: boolean;
+  price: string;
+}
+
+export interface Treatment extends FirestoreDocument {
+  name: string;
+  description: string;
+  duration: string;
+  category: string;
 }
 
 /**
@@ -104,7 +174,7 @@ export const getDocument = async <T extends FirestoreDocument>(
   try {
     const docRef = getDocumentRef(collectionName, documentId);
     const docSnap = await getDoc(docRef);
-    
+
     if (docSnap.exists()) {
       return { id: docSnap.id, ...docSnap.data() } as T;
     }
@@ -125,12 +195,12 @@ export const getAllDocuments = async <T extends FirestoreDocument>(
   try {
     const collectionRef = getCollectionRef(collectionName);
     const querySnapshot = await getDocs(collectionRef);
-    
+
     const documents: T[] = [];
     querySnapshot.forEach((doc) => {
       documents.push({ id: doc.id, ...doc.data() } as T);
     });
-    
+
     console.log(`[Firestore] Retrieved ${documents.length} documents from ${collectionName}`);
     return documents;
   } catch (error) {
@@ -150,12 +220,12 @@ export const queryDocuments = async <T extends FirestoreDocument>(
     const collectionRef = getCollectionRef(collectionName);
     const q = query(collectionRef, ...constraints);
     const querySnapshot = await getDocs(q);
-    
+
     const documents: T[] = [];
     querySnapshot.forEach((doc) => {
       documents.push({ id: doc.id, ...doc.data() } as T);
     });
-    
+
     console.log(`[Firestore] Queried ${documents.length} documents from ${collectionName}`);
     return documents;
   } catch (error) {
@@ -175,21 +245,21 @@ export const getDocumentsPaginated = async <T extends FirestoreDocument>(
   try {
     const collectionRef = getCollectionRef(collectionName);
     const constraints: QueryConstraint[] = [limit(pageSize)];
-    
+
     if (lastDocSnapshot) {
       constraints.push(startAfter(lastDocSnapshot));
     }
-    
+
     const q = query(collectionRef, ...constraints);
     const querySnapshot = await getDocs(q);
-    
+
     const documents: T[] = [];
     querySnapshot.forEach((doc) => {
       documents.push({ id: doc.id, ...doc.data() } as T);
     });
-    
+
     const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1] || null;
-    
+
     return {
       data: documents,
       lastDoc,
@@ -204,7 +274,7 @@ export const getDocumentsPaginated = async <T extends FirestoreDocument>(
 /**
  * Update a document
  */
-export const updateDocument = async <T extends Record<string, unknown>>(
+export const updateDocument = async <T extends object>(
   collectionName: CollectionName,
   documentId: string,
   data: Partial<Omit<T, 'id' | 'createdAt'>>

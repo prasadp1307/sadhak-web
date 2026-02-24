@@ -6,52 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight, LogOut } from "lucide-react";
+import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight, LogOut, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from './AuthProvider';
 import { logOut } from '../lib/auth';
 import { useRouter } from 'next/navigation';
-
-interface Patient {
-  id: number;
-  name: string;
-  age: number;
-  address: string;
-  phoneNumber: string;
-  job: string;
-  reference: string;
-  symptoms: string;
-  treatmentPlan: string;
-  payment: string;
-  lastVisit: string;
-  status: string;
-}
-
-interface Appointment {
-  id: number;
-  time: string;
-  patient: string;
-  type: string;
-  duration: string;
-}
-
-interface Medicine {
-  id: number;
-  name: string;
-  category: string;
-  stock: number;
-  lowStock: boolean;
-  price: string;
-}
-
-interface Treatment {
-  id: number;
-  name: string;
-  description: string;
-  duration: string;
-  category: string;
-}
+import { Patient, Appointment, Medicine, Treatment, Payment, COLLECTIONS, getAllDocuments, createDocument, deleteDocument } from '../lib/firestore-service';
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from 'recharts';
 
 export default function SadhakAyurvedApp() {
   const { user } = useAuth();
@@ -67,37 +32,44 @@ export default function SadhakAyurvedApp() {
       console.error('Logout error:', error);
     }
   };
-  
+
   // Dynamic state for patients
-  const [patients, setPatients] = useState<Patient[]>([
-    { id: 1, name: "Rajesh Kumar", age: 45, address: "123 MG Road, Bangalore", phoneNumber: "+91-9876543210", job: "Engineer", reference: "Dr. Sharma", symptoms: "Pain in knees and elbows", treatmentPlan: "Abhyanga and herbal supplements", payment: "₹500", lastVisit: "2025-01-15", status: "Active" },
-    { id: 2, name: "Priya Sharma", age: 32, address: "456 Brigade Road, Bangalore", phoneNumber: "+91-9876543211", job: "Teacher", reference: "Online Search", symptoms: "Bloating and indigestion", treatmentPlan: "Triphala and dietary changes", payment: "₹400", lastVisit: "2025-01-14", status: "Active" },
-    { id: 3, name: "Amit Patel", age: 58, address: "789 Residency Road, Bangalore", phoneNumber: "+91-9876543212", job: "Businessman", reference: "Friend", symptoms: "High blood pressure", treatmentPlan: "Rasayana therapy", payment: "₹600", lastVisit: "2025-01-13", status: "Follow-up" },
-    { id: 4, name: "Lakshmi Reddy", age: 28, address: "321 Commercial Street, Bangalore", phoneNumber: "+91-9876543213", job: "Doctor", reference: "Hospital", symptoms: "Insomnia and restlessness", treatmentPlan: "Ashwagandha and meditation", payment: "₹450", lastVisit: "2025-01-12", status: "Active" },
-  ]);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
   // Dynamic state for appointments
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    { id: 1, time: "09:00 AM", patient: "Sanjay Verma", type: "Initial Consultation", duration: "45 min" },
-    { id: 2, time: "10:00 AM", patient: "Meera Singh", type: "Follow-up", duration: "30 min" },
-    { id: 3, time: "11:30 AM", patient: "Arjun Das", type: "Panchakarma Session", duration: "60 min" },
-    { id: 4, time: "02:00 PM", patient: "Kavita Joshi", type: "Consultation", duration: "45 min" },
-  ]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  // Dynamic state for payments
+  const [payments, setPayments] = useState<Payment[]>([]);
+
+  // Fetch initial data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [patientsData, appointmentsData, medicinesData, treatmentsData, paymentsData] = await Promise.all([
+          getAllDocuments<Patient>(COLLECTIONS.PATIENTS),
+          getAllDocuments<Appointment>(COLLECTIONS.APPOINTMENTS),
+          getAllDocuments<Medicine>(COLLECTIONS.MEDICINES),
+          getAllDocuments<Treatment>(COLLECTIONS.TREATMENTS),
+          getAllDocuments<Payment>(COLLECTIONS.PAYMENTS)
+        ]);
+        setPatients(patientsData);
+        setAppointments(appointmentsData);
+        setMedicines(medicinesData);
+        setTreatments(treatmentsData);
+        setPayments(paymentsData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    fetchData();
+  }, []);
 
   // Dynamic state for medicines
-  const [medicines, setMedicines] = useState<Medicine[]>([
-    { id: 1, name: "Ashwagandha Churna", category: "Rasayana", stock: 45, lowStock: false, price: "₹250" },
-    { id: 2, name: "Triphala Powder", category: "Digestive", stock: 12, lowStock: true, price: "₹180" },
-    { id: 3, name: "Brahmi Oil", category: "Neural", stock: 28, lowStock: false, price: "₹320" },
-    { id: 4, name: "Chyawanprash", category: "Immunity", stock: 8, lowStock: true, price: "₹450" },
-  ]);
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
 
   // Dynamic state for treatments
-  const [treatments, setTreatments] = useState<Treatment[]>([
-    { id: 1, name: "Abhyanga", description: "Full body oil massage therapy", duration: "60 min", category: "Panchakarma" },
-    { id: 2, name: "Shirodhara", description: "Continuous oil pouring on forehead", duration: "45 min", category: "Panchakarma" },
-    { id: 3, name: "Rasayana Therapy", description: "Rejuvenation treatment with herbs", duration: "90 min", category: "Herbal" },
-  ]);
+  const [treatments, setTreatments] = useState<Treatment[]>([]);
 
   // Form visibility states
   const [showAddPatientForm, setShowAddPatientForm] = useState(false);
@@ -108,79 +80,188 @@ export default function SadhakAyurvedApp() {
 
 
   // Form input states
-  const [newPatient, setNewPatient] = useState({ name: "", age: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "", payment: "" });
-  const [newAppointment, setNewAppointment] = useState({ time: "", patient: "", type: "", duration: "" });
+  const [newPatient, setNewPatient] = useState({ name: "", age: "", dob: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "" });
+
+  const getTodayDate = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const getCurrentTimeRounded = () => {
+    const d = new Date();
+    d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15);
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const [newAppointment, setNewAppointment] = useState({
+    date: getTodayDate(),
+    time: getCurrentTimeRounded(),
+    patientId: "",
+    patientName: "",
+    type: "",
+    duration: ""
+  });
   const [newMedicine, setNewMedicine] = useState({ name: "", category: "", stock: "", price: "" });
   const [newTreatment, setNewTreatment] = useState({ name: "", description: "", duration: "", category: "" });
+
+  // Payment states
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState({
+    consultingFee: 0,
+    medicineCharges: 0,
+    procedureCharges: 0,
+    panchakarmaCharges: 0,
+    extraCharges: 0,
+    paidAmount: 0
+  });
+
+  const totalAmount = paymentDetails.consultingFee + paymentDetails.medicineCharges + paymentDetails.procedureCharges + paymentDetails.panchakarmaCharges + paymentDetails.extraCharges;
+  const balanceAmount = totalAmount - paymentDetails.paidAmount;
 
 
 
   // Form handlers
-  const handleAddPatient = () => {
-    if (newPatient.name && newPatient.age && newPatient.address && newPatient.phoneNumber && newPatient.job && newPatient.reference) {
-      const patient: Patient = {
-        id: patients.length + 1,
-        name: newPatient.name,
-        age: parseInt(newPatient.age),
-        address: newPatient.address,
-        phoneNumber: newPatient.phoneNumber,
-        job: newPatient.job,
-        reference: newPatient.reference,
-        symptoms: newPatient.symptoms,
-        treatmentPlan: newPatient.treatmentPlan,
-        payment: newPatient.payment,
-        lastVisit: new Date().toISOString().split('T')[0],
-        status: "Active"
-      };
-      setPatients([...patients, patient]);
-      setNewPatient({ name: "", age: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "", payment: "" });
-      setShowAddPatientForm(false);
+  const handleAddPatient = async () => {
+    if (newPatient.name && newPatient.age && newPatient.address && newPatient.phoneNumber) {
+      try {
+        const patientData = {
+          name: newPatient.name,
+          age: parseInt(newPatient.age),
+          dob: newPatient.dob,
+          address: newPatient.address,
+          phoneNumber: newPatient.phoneNumber,
+          job: newPatient.job,
+          reference: newPatient.reference,
+          lastVisit: new Date().toISOString().split('T')[0],
+          status: "Active"
+        };
+        const newId = await createDocument(COLLECTIONS.PATIENTS, patientData);
+
+        const newPatientObj: Patient = {
+          id: newId,
+          ...patientData,
+          symptoms: newPatient.symptoms,
+          treatmentPlan: newPatient.treatmentPlan,
+        };
+
+        setPatients([...patients, newPatientObj]);
+        setNewPatient({ name: "", age: "", dob: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "" });
+        setShowAddPatientForm(false);
+      } catch (error) {
+        console.error("Error adding patient:", error);
+      }
     }
   };
 
-  const handleAddAppointment = () => {
-    if (newAppointment.time && newAppointment.patient && newAppointment.type && newAppointment.duration) {
-      const appointment: Appointment = {
-        id: appointments.length + 1,
-        time: newAppointment.time,
-        patient: newAppointment.patient,
-        type: newAppointment.type,
-        duration: newAppointment.duration
-      };
-      setAppointments([...appointments, appointment]);
-      setNewAppointment({ time: "", patient: "", type: "", duration: "" });
-      setShowAddAppointmentForm(false);
+  const handleAddAppointment = async () => {
+    if (newAppointment.date && newAppointment.time && newAppointment.patientId && newAppointment.type && newAppointment.duration) {
+      try {
+        const appointmentData = {
+          date: newAppointment.date,
+          time: newAppointment.time,
+          patientId: newAppointment.patientId,
+          patientName: newAppointment.patientName,
+          type: newAppointment.type,
+          duration: newAppointment.duration,
+          status: "Scheduled"
+        };
+        const newId = await createDocument(COLLECTIONS.APPOINTMENTS, appointmentData);
+
+        const appointment: Appointment = {
+          id: newId,
+          ...appointmentData
+        };
+
+        setAppointments([...appointments, appointment]);
+        setNewAppointment({ date: getTodayDate(), time: getCurrentTimeRounded(), patientId: "", patientName: "", type: "", duration: "" });
+        setShowAddAppointmentForm(false);
+      } catch (error) {
+        console.error("Error scheduling appointment:", error);
+      }
     }
   };
 
-  const handleAddMedicine = () => {
+  const handleAddMedicine = async () => {
     if (newMedicine.name && newMedicine.category && newMedicine.stock && newMedicine.price) {
-      const medicine: Medicine = {
-        id: medicines.length + 1,
-        name: newMedicine.name,
-        category: newMedicine.category,
-        stock: parseInt(newMedicine.stock),
-        lowStock: parseInt(newMedicine.stock) < 15,
-        price: newMedicine.price
-      };
-      setMedicines([...medicines, medicine]);
-      setNewMedicine({ name: "", category: "", stock: "", price: "" });
-      setShowAddMedicineForm(false);
+      try {
+        const medicineData = {
+          name: newMedicine.name,
+          category: newMedicine.category,
+          stock: parseInt(newMedicine.stock),
+          lowStock: parseInt(newMedicine.stock) < 15,
+          price: newMedicine.price
+        };
+        const newId = await createDocument(COLLECTIONS.MEDICINES, medicineData);
+        setMedicines([...medicines, { id: newId, ...medicineData }]);
+        setNewMedicine({ name: "", category: "", stock: "", price: "" });
+        setShowAddMedicineForm(false);
+      } catch (error) {
+        console.error("Error adding medicine:", error);
+      }
     }
   };
 
-  const handleAddTreatment = () => {
+  const handleAddTreatment = async () => {
     if (newTreatment.name && newTreatment.description && newTreatment.duration && newTreatment.category) {
-      const treatment: Treatment = {
-        id: treatments.length + 1,
-        name: newTreatment.name,
-        description: newTreatment.description,
-        duration: newTreatment.duration,
-        category: newTreatment.category
+      try {
+        const treatmentData = {
+          name: newTreatment.name,
+          description: newTreatment.description,
+          duration: newTreatment.duration,
+          category: newTreatment.category
+        };
+        const newId = await createDocument(COLLECTIONS.TREATMENTS, treatmentData);
+        setTreatments([...treatments, { id: newId, ...treatmentData }]);
+        setNewTreatment({ name: "", description: "", duration: "", category: "" });
+        setShowAddTreatmentForm(false);
+      } catch (error) {
+        console.error("Error adding treatment:", error);
+      }
+    }
+  };
+
+  const openPaymentModal = (appointmentId: string) => {
+    setSelectedAppointmentId(appointmentId);
+    setPaymentDetails({
+      consultingFee: 0,
+      medicineCharges: 0,
+      procedureCharges: 0,
+      panchakarmaCharges: 0,
+      extraCharges: 0,
+      paidAmount: 0
+    });
+    setShowPaymentModal(true);
+  };
+
+  const handleSavePayment = async () => {
+    if (!selectedAppointmentId) return;
+
+    const appointment = appointments.find(a => a.id === selectedAppointmentId);
+    if (!appointment) return;
+
+    try {
+      const paymentData = {
+        patientId: appointment.patientId,
+        appointmentId: appointment.id,
+        consultingFee: paymentDetails.consultingFee,
+        medicineCharges: paymentDetails.medicineCharges,
+        procedureCharges: paymentDetails.procedureCharges,
+        panchakarmaCharges: paymentDetails.panchakarmaCharges,
+        extraCharges: paymentDetails.extraCharges,
+        totalAmount,
+        paidAmount: paymentDetails.paidAmount,
+        balanceAmount,
+        date: new Date().toISOString()
       };
-      setTreatments([...treatments, treatment]);
-      setNewTreatment({ name: "", description: "", duration: "", category: "" });
-      setShowAddTreatmentForm(false);
+
+      await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+
+      // Update appointment status (requires updateDocument import or just local state update for now)
+      setAppointments(appointments.map(app =>
+        app.id === selectedAppointmentId ? { ...app, status: "Completed" } : app
+      ));
+
+      setShowPaymentModal(false);
+      setSelectedAppointmentId(null);
+    } catch (error) {
+      console.error("Error saving payment:", error);
     }
   };
 
@@ -275,7 +356,7 @@ export default function SadhakAyurvedApp() {
                       <Clock className="h-5 w-5 text-teal-600" />
                     </div>
                     <div>
-                      <p className="font-semibold text-stone-800">{appointment.patient}</p>
+                      <p className="font-semibold text-stone-800">{appointment.patientName}</p>
                       <p className="text-sm text-stone-600">{appointment.type}</p>
                       <p className="text-xs text-stone-500">{appointment.duration}</p>
                     </div>
@@ -330,6 +411,16 @@ export default function SadhakAyurvedApp() {
                   placeholder="Enter age"
                   value={newPatient.age}
                   onChange={(e) => setNewPatient({ ...newPatient, age: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="patient-dob">Date of Birth</Label>
+                <Input
+                  id="patient-dob"
+                  type="date"
+                  placeholder="Select Date of Birth"
+                  value={newPatient.dob}
+                  onChange={(e) => setNewPatient({ ...newPatient, dob: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -444,6 +535,17 @@ export default function SadhakAyurvedApp() {
     </div>
   );
 
+  const handleDeleteAppointment = async (appointmentId: string) => {
+    if (window.confirm("Are you sure you want to delete this appointment?")) {
+      try {
+        await deleteDocument(COLLECTIONS.APPOINTMENTS, appointmentId);
+        setAppointments(appointments.filter(a => a.id !== appointmentId));
+      } catch (error) {
+        console.error("Error deleting appointment:", error);
+      }
+    }
+  };
+
   const renderAppointments = () => (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -466,6 +568,15 @@ export default function SadhakAyurvedApp() {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
+                <Label htmlFor="appointment-date">Date</Label>
+                <Input
+                  id="appointment-date"
+                  type="date"
+                  value={newAppointment.date}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="appointment-time">Time</Label>
                 <Input
                   id="appointment-time"
@@ -475,13 +586,27 @@ export default function SadhakAyurvedApp() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="appointment-patient">Patient Name</Label>
-                <Input
-                  id="appointment-patient"
-                  placeholder="Enter patient name"
-                  value={newAppointment.patient}
-                  onChange={(e) => setNewAppointment({ ...newAppointment, patient: e.target.value })}
-                />
+                <Label htmlFor="appointment-patient">Patient</Label>
+                <Select
+                  value={newAppointment.patientId}
+                  onValueChange={(val) => {
+                    const selectedPatient = patients.find(p => p.id === val);
+                    setNewAppointment({
+                      ...newAppointment,
+                      patientId: val,
+                      patientName: selectedPatient ? selectedPatient.name : ""
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select patient" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name} ({p.phoneNumber})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="appointment-type">Appointment Type</Label>
@@ -539,19 +664,87 @@ export default function SadhakAyurvedApp() {
                     <p className="text-xs text-teal-600">{appointment.time.split(" ")[1]}</p>
                   </div>
                   <div>
-                    <p className="font-semibold text-stone-800">{appointment.patient}</p>
+                    <p className="font-semibold text-stone-800">{appointment.patientName}</p>
                     <p className="text-sm text-stone-600">{appointment.type}</p>
                     <p className="text-xs text-stone-500">Duration: {appointment.duration}</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50">
-                  Start Consultation
-                </Button>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                    onClick={() => openPaymentModal(appointment.id)}
+                  >
+                    Checkout & Pay
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => handleDeleteAppointment(appointment.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Process Payment</DialogTitle>
+            <DialogDescription>
+              Enter the charges for this appointment. Total and Balance will be auto-calculated.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="consulting" className="col-span-2">Consulting Fee</Label>
+              <Input id="consulting" type="number" min="0" className="col-span-2" value={paymentDetails.consultingFee || ''} onChange={(e) => setPaymentDetails({ ...paymentDetails, consultingFee: Number(e.target.value) })} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="medicines" className="col-span-2">Medicine Charges</Label>
+              <Input id="medicines" type="number" min="0" className="col-span-2" value={paymentDetails.medicineCharges || ''} onChange={(e) => setPaymentDetails({ ...paymentDetails, medicineCharges: Number(e.target.value) })} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="procedures" className="col-span-2">Procedure Charges</Label>
+              <Input id="procedures" type="number" min="0" className="col-span-2" value={paymentDetails.procedureCharges || ''} onChange={(e) => setPaymentDetails({ ...paymentDetails, procedureCharges: Number(e.target.value) })} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="panchakarma" className="col-span-2">Panchakarma Charges</Label>
+              <Input id="panchakarma" type="number" min="0" className="col-span-2" value={paymentDetails.panchakarmaCharges || ''} onChange={(e) => setPaymentDetails({ ...paymentDetails, panchakarmaCharges: Number(e.target.value) })} />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="extra" className="col-span-2">Extra Charges</Label>
+              <Input id="extra" type="number" min="0" className="col-span-2" value={paymentDetails.extraCharges || ''} onChange={(e) => setPaymentDetails({ ...paymentDetails, extraCharges: Number(e.target.value) })} />
+            </div>
+
+            <div className="border-t pt-4 mt-2">
+              <div className="grid grid-cols-4 items-center gap-4 font-bold bg-stone-50 p-3 rounded-md border border-stone-200">
+                <Label className="col-span-2 text-lg">Total Amount</Label>
+                <div className="col-span-2 text-lg text-stone-800">₹{totalAmount}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4 mt-2">
+              <Label htmlFor="paid" className="col-span-2 font-semibold text-emerald-600">Amount Paid</Label>
+              <Input id="paid" type="number" min="0" className="col-span-2 bg-emerald-50 font-bold text-emerald-700 border-emerald-300 focus-visible:ring-emerald-500" value={paymentDetails.paidAmount || ''} onChange={(e) => setPaymentDetails({ ...paymentDetails, paidAmount: Number(e.target.value) })} />
+            </div>
+
+            <div className="grid grid-cols-4 items-center gap-4 mt-2">
+              <Label className="col-span-2 font-semibold text-amber-600">Balance Amount</Label>
+              <div className="col-span-2 text-lg font-bold text-amber-700">₹{balanceAmount}</div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPaymentModal(false)}>Cancel</Button>
+            <Button onClick={handleSavePayment} className="bg-emerald-600 hover:bg-emerald-700 text-white">Save Payment</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
@@ -792,20 +985,273 @@ export default function SadhakAyurvedApp() {
     </div>
   );
 
-  const renderReports = () => (
-    <div className="flex h-96 items-center justify-center">
-      <div className="text-center">
-        <FileText className="mx-auto h-16 w-16 text-stone-300" />
-        <p className="mt-4 text-lg font-semibold text-stone-600">Reports Section</p>
-        <p className="text-sm text-stone-500">Analytics and reports will be available here</p>
+  const handleDeletePayment = async (paymentId: string) => {
+    if (window.confirm("Are you sure you want to delete this payment record? This action cannot be undone.")) {
+      try {
+        await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+        setPayments(payments.filter(p => p.id !== paymentId));
+      } catch (error) {
+        console.error("Error deleting payment:", error);
+      }
+    }
+  };
+
+  const renderReports = () => {
+    // 1. Line Chart: Payments Over Time
+    const paymentsByDate = payments.reduce((acc: any, curr) => {
+      const date = curr.date.split('T')[0];
+      if (!acc[date]) acc[date] = { date, totalAmount: 0, paidAmount: 0 };
+      acc[date].totalAmount += curr.totalAmount;
+      acc[date].paidAmount += curr.paidAmount;
+      return acc;
+    }, {});
+    const lineChartData = Object.values(paymentsByDate).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    // 2. Bar Chart: Monthly Revenue
+    const monthlyRevenue = payments.reduce((acc: any, curr) => {
+      const date = new Date(curr.date);
+      const month = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+      if (!acc[month]) acc[month] = { month, revenue: 0 };
+      acc[month].revenue += curr.paidAmount;
+      return acc;
+    }, {});
+    const barChartData = Object.values(monthlyRevenue);
+
+    // 3. Pie Chart: Payment Distribution
+    const distribution = payments.reduce((acc, curr) => {
+      acc.Consulting += curr.consultingFee;
+      acc.Medicine += curr.medicineCharges;
+      acc.Procedures += curr.procedureCharges;
+      acc.Panchakarma += curr.panchakarmaCharges;
+      acc.Extra += curr.extraCharges;
+      return acc;
+    }, { Consulting: 0, Medicine: 0, Procedures: 0, Panchakarma: 0, Extra: 0 });
+
+    const pieChartData = Object.keys(distribution)
+      .filter(key => distribution[key as keyof typeof distribution] > 0)
+      .map(key => ({
+        name: key,
+        value: distribution[key as keyof typeof distribution]
+      }));
+
+    const COLORS = ['#059669', '#d97706', '#0284c7', '#7c3aed', '#dc2626'];
+
+    // 4. Donut Chart: Paid vs Outstanding
+    const totalPaidSum = payments.reduce((sum, p) => sum + p.paidAmount, 0);
+    const totalBalanceSum = payments.reduce((sum, p) => sum + p.balanceAmount, 0);
+    const balanceData = [
+      { name: 'Paid', value: totalPaidSum },
+      { name: 'Outstanding', value: totalBalanceSum }
+    ];
+
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-stone-800">Financial Reports & Analytics</h2>
+            <p className="text-sm text-stone-600">Track revenue, outstandings, and payment distributions.</p>
+          </div>
+        </div>
+
+        {/* Top Summary Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-amber-100 bg-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-stone-500 uppercase tracking-wider">Total Revenue</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-emerald-700">₹{totalPaidSum}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-amber-100 bg-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-stone-500 uppercase tracking-wider">Total Outstanding</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-red-600">₹{totalBalanceSum}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-amber-100 bg-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-stone-500 uppercase tracking-wider">Total Transactions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-blue-600">{payments.length}</p>
+            </CardContent>
+          </Card>
+          <Card className="border-amber-100 bg-white">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-stone-500 uppercase tracking-wider">Avg. Transaction</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-purple-600">
+                ₹{payments.length ? Math.round(totalPaidSum / payments.length) : 0}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Revenue Over Time Line Chart */}
+          <Card className="border-amber-100 p-4">
+            <CardTitle className="mb-4 text-stone-800">Revenue Over Time</CardTitle>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={lineChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis dataKey="date" stroke="#6b7280" fontSize={12} tickMargin={10} />
+                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(value) => `₹${value}`} />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #fcd34d' }} />
+                  <Legend />
+                  <Line type="monotone" name="Total Billed" dataKey="totalAmount" stroke="#94a3b8" strokeWidth={2} dot={false} />
+                  <Line type="monotone" name="Actual Paid" dataKey="paidAmount" stroke="#059669" strokeWidth={3} activeDot={{ r: 8 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Monthly Bar Chart */}
+          <Card className="border-amber-100 p-4">
+            <CardTitle className="mb-4 text-stone-800">Monthly Collections</CardTitle>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barChartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#6b7280" fontSize={12} tickMargin={10} />
+                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={(value) => `₹${value}`} />
+                  <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #fcd34d' }} />
+                  <Bar name="Revenue" dataKey="revenue" fill="#d97706" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Payment Distribution Pie Chart */}
+          <Card className="border-amber-100 p-4">
+            <CardTitle className="mb-4 text-stone-800">Revenue Distribution</CardTitle>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={90}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                  >
+                    {pieChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #fcd34d' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Paid vs Outstanding Donut Chart */}
+          <Card className="border-amber-100 p-4">
+            <CardTitle className="mb-4 text-stone-800">Paid vs Outstanding</CardTitle>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={balanceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    fill="#8884d8"
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    <Cell fill="#059669" /> {/* Paid - Green */}
+                    <Cell fill="#ef4444" /> {/* Outstanding - Red */}
+                  </Pie>
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #fcd34d' }} formatter={(value) => `₹${value}`} />
+                  <Legend verticalAlign="bottom" height={36} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+        </div>
+
+        {/* Tabular Payment History */}
+        <Card className="border-amber-100">
+          <CardHeader className="border-b border-amber-50 bg-gradient-to-r from-emerald-50 to-teal-50">
+            <CardTitle className="text-stone-800">Recent Transactions</CardTitle>
+            <CardDescription>Comprehensive ledger of patient payments</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-stone-50 text-xs uppercase text-stone-500">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold">Date</th>
+                    <th className="px-6 py-4 font-semibold">Patient</th>
+                    <th className="px-6 py-4 font-semibold text-right">Total Billed</th>
+                    <th className="px-6 py-4 font-semibold text-right">Amount Paid</th>
+                    <th className="px-6 py-4 font-semibold text-right">Balance</th>
+                    <th className="px-6 py-4 font-semibold text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 bg-white">
+                  {[...payments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payment) => {
+                    const patient = patients.find(p => p.id === payment.patientId);
+                    return (
+                      <tr key={payment.id} className="transition-colors hover:bg-stone-50">
+                        <td className="px-6 py-4 font-medium text-stone-800">
+                          {new Date(payment.date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <button
+                            onClick={() => window.open(`/patient/${patient?.id}`, '_blank')}
+                            className="font-medium text-emerald-600 hover:underline"
+                          >
+                            {patient?.name || 'Unknown Patient'}
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-right text-stone-600">₹{payment.totalAmount}</td>
+                        <td className="px-6 py-4 text-right font-semibold text-emerald-600">₹{payment.paidAmount}</td>
+                        <td className="px-6 py-4 text-right">
+                          <span className={`font-semibold ${payment.balanceAmount > 0 ? "text-red-600" : "text-stone-500"}`}>
+                            ₹{payment.balanceAmount}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => handleDeletePayment(payment.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {payments.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-stone-500 italic">No transactions recorded yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/40 to-emerald-50/60">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-100/20 via-transparent to-transparent"></div>
-      
+
       <header className="sticky top-0 z-50 border-b-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-emerald-50 shadow-lg backdrop-blur-sm">
         <div className="relative z-10 flex h-16 items-center justify-between px-4">
           <div className="flex items-center space-x-4">

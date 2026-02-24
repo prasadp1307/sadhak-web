@@ -1,4 +1,4 @@
-import { 
+import {
   COLLECTIONS,
   getCollectionRef,
 } from '../firestore-service';
@@ -8,8 +8,8 @@ jest.mock('firebase/firestore', () => ({
 }));
 
 jest.mock('../firebase', () => ({
-   db: 'mock-db',
-   auth: 'mock-auth',
+  db: 'mock-db',
+  auth: 'mock-auth',
 }));
 
 describe('Firestore Service', () => {
@@ -19,8 +19,8 @@ describe('Firestore Service', () => {
     expect(COLLECTIONS.APPOINTMENTS).toBe('appointments');
   });
 
-  it ('should return collection reference' ,()=>{
-     const ref = getCollectionRef(COLLECTIONS.PATIENTS);
-     expect(ref.name).toBe('patients');   
-   });
+  it('should return collection reference', () => {
+    const ref = getCollectionRef(COLLECTIONS.PATIENTS);
+    expect((ref as any).name).toBe('patients');
+  });
 });
