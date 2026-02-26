@@ -16,6 +16,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
 
   const [newFollowUp, setNewFollowUp] = useState({
     date: new Date().toISOString().split('T')[0],
+    time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
     reason: "",
     notes: "",
     status: "Pending" as const
@@ -63,7 +64,9 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
         updateDocument(COLLECTIONS.FOLLOW_UPS, f.id, {
           notes: f.notes,
           reason: f.reason,
-          status: f.status
+          status: f.status,
+          date: f.date,
+          time: f.time
         })
       );
       await Promise.all(updatePromises);
@@ -72,6 +75,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
         const followUpData: Omit<FollowUp, 'id' | 'createdAt' | 'updatedAt'> = {
           patientId: params.id,
           date: newFollowUp.date,
+          time: newFollowUp.time,
           reason: newFollowUp.reason,
           notes: newFollowUp.notes,
           status: newFollowUp.status
@@ -267,7 +271,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                       ) : (
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
-                            <span className="font-semibold text-stone-800 text-sm">{new Date(followUp.date).toLocaleDateString()} (Pending)</span>
+                            <span className="font-semibold text-stone-800 text-sm">{followUp.date} (Pending)</span>
                             <div className="flex items-center space-x-2">
                               <label className="text-sm text-stone-700">Status:</label>
                               <select
@@ -281,6 +285,16 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-700" onClick={() => handleDeleteFollowUp(followUp.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-medium text-stone-700">Date</label>
+                              <input type="date" value={followUp.date} onChange={e => setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, date: e.target.value } : f))} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-1.5 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-stone-700">Time</label>
+                              <input type="time" value={followUp.time || ""} onChange={e => setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, time: e.target.value } : f))} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-1.5 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                             </div>
                           </div>
                           <div>
@@ -304,10 +318,14 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                 <h3 className="text-stone-800 font-semibold">Log New Follow-Up</h3>
               </div>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-stone-700">Follow-Up Date</label>
                     <input type="date" value={newFollowUp.date} onChange={e => setNewFollowUp({ ...newFollowUp, date: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700">Time</label>
+                    <input type="time" value={newFollowUp.time} onChange={e => setNewFollowUp({ ...newFollowUp, time: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-stone-700">Status</label>

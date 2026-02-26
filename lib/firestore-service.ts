@@ -77,6 +77,7 @@ export interface Appointment extends FirestoreDocument {
 export interface FollowUp extends FirestoreDocument {
   patientId: string;
   date: string;
+  time?: string; // Added to support explicit time tracking
   notes: string;
   reason: string;
   status: 'Pending' | 'Completed';

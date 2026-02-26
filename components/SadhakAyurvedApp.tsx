@@ -23,6 +23,7 @@ export default function SadhakAyurvedApp() {
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleLogout = async () => {
     try {
@@ -321,21 +322,31 @@ export default function SadhakAyurvedApp() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-amber-50">
-              {patients.slice(0, 4).map((patient) => (
-                <div key={patient.id} className="flex items-center justify-between p-4 transition-colors hover:bg-amber-50/50">
-                  <div className="flex-1">
-                    <p className="font-semibold text-stone-800">{patient.name}</p>
-                    <p className="text-sm text-stone-600">{patient.age} years • {patient.job}</p>
-                    <p className="text-xs text-stone-500">{patient.reference}</p>
+              {patients
+                .filter(p =>
+                  p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  p.phoneNumber.includes(searchTerm) ||
+                  p.id.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .slice(0, 4).map((patient) => (
+                  <div
+                    key={patient.id}
+                    className="flex items-center justify-between p-4 transition-colors hover:bg-amber-50/50 cursor-pointer"
+                    onClick={() => router.push(`/patient/${patient.id}`)}
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-stone-800">{patient.name}</p>
+                      <p className="text-sm text-stone-600">{patient.age} years • {patient.job}</p>
+                      <p className="text-xs text-stone-500">{patient.reference}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                        {patient.status}
+                      </span>
+                      <p className="mt-1 text-xs text-stone-500">{patient.lastVisit}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                      {patient.status}
-                    </span>
-                    <p className="mt-1 text-xs text-stone-500">{patient.lastVisit}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -349,23 +360,33 @@ export default function SadhakAyurvedApp() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-amber-50">
-              {appointments.map((appointment) => (
-                <div key={appointment.id} className="flex items-center justify-between p-4 transition-colors hover:bg-emerald-50/50">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-teal-100">
-                      <Clock className="h-5 w-5 text-teal-600" />
+              {appointments
+                .filter(a =>
+                  a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  a.date.includes(searchTerm)
+                )
+                .map((appointment) => (
+                  <div
+                    key={appointment.id}
+                    className="flex items-center justify-between p-4 transition-colors hover:bg-emerald-50/50 cursor-pointer"
+                    onClick={() => router.push(`/patient/${appointment.patientId}`)}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-teal-100">
+                        <Clock className="h-5 w-5 text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-stone-800">{appointment.patientName}</p>
+                        <p className="text-sm text-stone-600">{appointment.type}</p>
+                        <p className="text-xs text-stone-500">{appointment.duration}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-stone-800">{appointment.patientName}</p>
-                      <p className="text-sm text-stone-600">{appointment.type}</p>
-                      <p className="text-xs text-stone-500">{appointment.duration}</p>
+                    <div className="text-right">
+                      <p className="font-semibold text-teal-700">{appointment.time}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-teal-700">{appointment.time}</p>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           </CardContent>
         </Card>
@@ -477,7 +498,12 @@ export default function SadhakAyurvedApp() {
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-stone-400" />
-              <Input placeholder="Search patients..." className="border-amber-200 pl-9" />
+              <Input
+                placeholder="Search by name, phone, or ID..."
+                className="border-amber-200 pl-9"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
 
           </div>
@@ -499,36 +525,51 @@ export default function SadhakAyurvedApp() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-amber-50">
-                {patients.map((patient) => (
-                  <tr key={patient.id} className="transition-colors hover:bg-amber-50/50">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-stone-800">{patient.name}</p>
-                        <p className="text-sm text-stone-600">{patient.age} years</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-stone-700">{patient.job}</td>
-                    <td className="px-6 py-4 text-sm text-stone-700">{patient.reference}</td>
-                    <td className="px-6 py-4 text-sm text-stone-600">{patient.lastVisit}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-                        {patient.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="sm" className="text-emerald-600 hover:bg-emerald-50" onClick={() => window.open(`/patient/${patient.id}`, '_blank')}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-amber-600 hover:bg-amber-50" onClick={() => window.open(`/patient/${patient.id}/edit`, '_blank')}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {patients
+                  .filter(p =>
+                    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    p.phoneNumber.includes(searchTerm) ||
+                    p.id.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((patient) => (
+                    <tr key={patient.id} className="transition-colors hover:bg-amber-50/50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="font-semibold text-stone-800">{patient.name}</p>
+                          <p className="text-sm text-stone-600">{patient.age} years</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-stone-700">{patient.job}</td>
+                      <td className="px-6 py-4 text-sm text-stone-700">{patient.reference}</td>
+                      <td className="px-6 py-4 text-sm text-stone-600">{patient.lastVisit}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                          {patient.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex space-x-2">
+                          <Button variant="ghost" size="sm" className="text-emerald-600 hover:bg-emerald-50" onClick={() => window.open(`/patient/${patient.id}`, '_blank')}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-amber-600 hover:bg-amber-50" onClick={() => window.open(`/patient/${patient.id}/edit`, '_blank')}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
+            {patients.filter(p =>
+              p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              p.phoneNumber.includes(searchTerm) ||
+              p.id.toLowerCase().includes(searchTerm.toLowerCase())
+            ).length === 0 && (
+                <div className="p-8 text-center bg-stone-50/50">
+                  <p className="text-stone-500 italic">No patients found matching &quot;{searchTerm}&quot;</p>
+                </div>
+              )}
           </div>
         </CardContent>
       </Card>
@@ -656,39 +697,54 @@ export default function SadhakAyurvedApp() {
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-4">
-            {appointments.map((appointment) => (
-              <div key={appointment.id} className="flex items-center justify-between rounded-lg border-2 border-emerald-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 p-4">
-                <div className="flex items-center space-x-4">
-                  <div className="flex h-16 w-16 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-teal-100">
-                    <p className="text-lg font-bold text-teal-600">{appointment.time.split(":")[0]}</p>
-                    <p className="text-xs text-teal-600">{appointment.time.split(" ")[1]}</p>
+            {appointments
+              .filter(a =>
+                a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                a.date.includes(searchTerm)
+              )
+              .map((appointment) => (
+                <div key={appointment.id} className="flex items-center justify-between rounded-lg border-2 border-emerald-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 p-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex h-16 w-16 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-teal-100">
+                      <p className="text-lg font-bold text-teal-600">{appointment.time.split(":")[0]}</p>
+                      <p className="text-xs text-teal-600">{appointment.time.split(" ")[1]}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-stone-800">{appointment.patientName}</p>
+                      <p className="text-sm text-stone-600">{appointment.type}</p>
+                      <p className="text-xs text-stone-500">Duration: {appointment.duration}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-stone-800">{appointment.patientName}</p>
-                    <p className="text-sm text-stone-600">{appointment.type}</p>
-                    <p className="text-xs text-stone-500">Duration: {appointment.duration}</p>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                      onClick={() => openPaymentModal(appointment.id)}
+                    >
+                      Checkout & Pay
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => handleDeleteAppointment(appointment.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                    onClick={() => openPaymentModal(appointment.id)}
-                  >
-                    Checkout & Pay
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:bg-red-50 hover:text-red-700"
-                    onClick={() => handleDeleteAppointment(appointment.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+              ))}
+            {appointments.filter(a =>
+              a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              a.date.includes(searchTerm)
+            ).length === 0 && (
+                <div className="p-8 text-center bg-stone-50/50 rounded-lg border-2 border-dashed border-stone-200">
+                  <p className="text-stone-500 italic">No appointments found matching &quot;{searchTerm}&quot;</p>
                 </div>
-              </div>
-            ))}
+              )}
           </div>
         </CardContent>
       </Card>
@@ -1269,6 +1325,16 @@ export default function SadhakAyurvedApp() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            <div className="hidden lg:flex items-center space-x-2 rounded-lg bg-white/50 px-3 py-1.5 shadow-sm transition-all focus-within:ring-2 focus-within:ring-emerald-500/20">
+              <Search size={16} className="text-stone-400" />
+              <input
+                type="text"
+                placeholder="Search patients, appointments..."
+                className="bg-transparent text-sm font-medium outline-none placeholder:text-stone-300 w-48 transition-all focus:w-64"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
             <button className="relative rounded-lg p-2 text-stone-700 transition-colors hover:bg-white/50">
               <Bell size={20} />
               <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500"></span>
