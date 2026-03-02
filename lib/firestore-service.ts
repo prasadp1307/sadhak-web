@@ -62,6 +62,20 @@ export interface Patient extends FirestoreDocument {
   ho?: string;
   treatment?: string;
   parikshan?: string;
+  // New Ayurvedic Assessment fields
+
+  panchakarmaTherapies?: Array<{
+    name: string;
+    duration: string;
+    schedule: string;
+    notes: string;
+  }>;
+  extraProcedures?: Array<{
+    name: string;
+    purpose: string;
+    durationFrequency: string;
+    remarks: string;
+  }>;
 }
 
 export interface Appointment extends FirestoreDocument {
@@ -344,6 +358,32 @@ export const countDocuments = async (
     return querySnapshot.size;
   } catch (error) {
     console.error(`[Firestore] Error counting documents in ${collectionName}:`, error instanceof Error ? error.message : 'Unknown error');
+    throw error;
+  }
+};
+
+/**
+ * Clear all data from all collections (Development/Admin use only)
+ */
+export const clearAllData = async (): Promise<{ success: boolean; deletedCount: number }> => {
+  try {
+    let totalDeleted = 0;
+    const collectionsToClear = Object.values(COLLECTIONS);
+
+    for (const collectionName of collectionsToClear) {
+      const collectionRef = getCollectionRef(collectionName);
+      const querySnapshot = await getDocs(collectionRef);
+
+      const deletePromises = querySnapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
+      await Promise.all(deletePromises);
+
+      totalDeleted += querySnapshot.size;
+      console.log(`[Firestore] Cleared ${querySnapshot.size} documents from ${collectionName}`);
+    }
+
+    return { success: true, deletedCount: totalDeleted };
+  } catch (error) {
+    console.error(`[Firestore] Error clearing database:`, error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 };

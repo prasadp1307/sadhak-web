@@ -214,31 +214,168 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
               </div>
             </div>
 
+            {/* Ayurvedic Profile Fields */}
             <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
               <div className="border-b border-amber-100 bg-gradient-to-r from-teal-50 to-emerald-50 p-4 -m-6 mb-6 rounded-t-lg">
-                <h3 className="text-stone-800 font-semibold">Ayurvedic Assessment</h3>
+                <h3 className="text-stone-800 font-semibold">Ayurvedic Profile</h3>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Nadi Parikshan</label>
-                  <textarea value={patient.nadiParikshan || ""} onChange={e => setPatient({ ...patient, nadiParikshan: e.target.value })} rows={3} placeholder="Pulse diagnosis details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                  <textarea value={patient.nadiParikshan || ""} onChange={e => setPatient({ ...patient, nadiParikshan: e.target.value })} rows={5} placeholder="Pulse diagnosis details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Condition (Lakshana)</label>
-                  <textarea value={patient.condition || ""} onChange={e => setPatient({ ...patient, condition: e.target.value })} rows={3} placeholder="Symptoms and signs..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-stone-700">H/O</label>
-                  <textarea value={patient.ho || ""} onChange={e => setPatient({ ...patient, ho: e.target.value })} rows={3} placeholder="History of present illness..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-stone-700">Treatment Details</label>
-                  <textarea value={patient.treatment || ""} onChange={e => setPatient({ ...patient, treatment: e.target.value })} rows={3} placeholder="Prescribed treatment in depth..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                  <textarea value={patient.condition || ""} onChange={e => setPatient({ ...patient, condition: e.target.value })} rows={5} placeholder="Symptoms and signs..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">General Assessment (Parikshan)</label>
-                  <textarea value={patient.parikshan || ""} onChange={e => setPatient({ ...patient, parikshan: e.target.value })} rows={3} placeholder="Mal (Stool), Mutra (Urine), Ksudha (Appetite), Jivha (Tongue), Nidra (Sleep) notes..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                  <textarea value={patient.parikshan || ""} onChange={e => setPatient({ ...patient, parikshan: e.target.value })} rows={5} placeholder="Mal, Mutra, Ksudha, Jivha, Nidra..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
                 </div>
+              </div>
+            </div>
+
+            {/* Panchakarma Therapies Editor */}
+            <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
+              <div className="border-b border-amber-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center">
+                <h3 className="text-stone-800 font-semibold">Panchakarma Therapies</h3>
+                <button
+                  type="button"
+                  onClick={() => setPatient({
+                    ...patient,
+                    panchakarmaTherapies: [...(patient.panchakarmaTherapies || []), { name: '', duration: '', schedule: '', notes: '' }]
+                  })}
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100"
+                >
+                  + Add Therapy
+                </button>
+              </div>
+              <div className="space-y-4">
+                {(!patient.panchakarmaTherapies || patient.panchakarmaTherapies.length === 0) ? (
+                  <p className="text-sm text-stone-500 italic">No therapies added.</p>
+                ) : (
+                  patient.panchakarmaTherapies.map((therapy, idx) => (
+                    <div key={idx} className="border border-amber-100 rounded-md p-4 bg-amber-50/20 relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...(patient.panchakarmaTherapies || [])];
+                          updated.splice(idx, 1);
+                          setPatient({ ...patient, panchakarmaTherapies: updated });
+                        }}
+                        className="absolute top-2 right-2 text-red-400 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-stone-600">Therapy Name</label>
+                          <input type="text" value={therapy.name} onChange={e => {
+                            const updated = [...(patient.panchakarmaTherapies || [])];
+                            updated[idx].name = e.target.value;
+                            setPatient({ ...patient, panchakarmaTherapies: updated });
+                          }} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-stone-600">Duration</label>
+                          <input type="text" value={therapy.duration} onChange={e => {
+                            const updated = [...(patient.panchakarmaTherapies || [])];
+                            updated[idx].duration = e.target.value;
+                            setPatient({ ...patient, panchakarmaTherapies: updated });
+                          }} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-stone-600">Schedule</label>
+                          <input type="text" value={therapy.schedule} onChange={e => {
+                            const updated = [...(patient.panchakarmaTherapies || [])];
+                            updated[idx].schedule = e.target.value;
+                            setPatient({ ...patient, panchakarmaTherapies: updated });
+                          }} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <label className="text-xs font-medium text-stone-600">Notes</label>
+                        <textarea value={therapy.notes} onChange={e => {
+                          const updated = [...(patient.panchakarmaTherapies || [])];
+                          updated[idx].notes = e.target.value;
+                          setPatient({ ...patient, panchakarmaTherapies: updated });
+                        }} rows={5} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Extra Procedures Editor */}
+            <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
+              <div className="border-b border-amber-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center">
+                <h3 className="text-stone-800 font-semibold">Extra Procedures</h3>
+                <button
+                  type="button"
+                  onClick={() => setPatient({
+                    ...patient,
+                    extraProcedures: [...(patient.extraProcedures || []), { name: '', purpose: '', durationFrequency: '', remarks: '' }]
+                  })}
+                  className="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-100"
+                >
+                  + Add Procedure
+                </button>
+              </div>
+              <div className="space-y-4">
+                {(!patient.extraProcedures || patient.extraProcedures.length === 0) ? (
+                  <p className="text-sm text-stone-500 italic">No procedures added.</p>
+                ) : (
+                  patient.extraProcedures.map((proc, idx) => (
+                    <div key={idx} className="border border-indigo-100 rounded-md p-4 bg-indigo-50/20 relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = [...(patient.extraProcedures || [])];
+                          updated.splice(idx, 1);
+                          setPatient({ ...patient, extraProcedures: updated });
+                        }}
+                        className="absolute top-2 right-2 text-red-400 hover:text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-xs font-medium text-stone-600">Procedure Name</label>
+                          <input type="text" value={proc.name} onChange={e => {
+                            const updated = [...(patient.extraProcedures || [])];
+                            updated[idx].name = e.target.value;
+                            setPatient({ ...patient, extraProcedures: updated });
+                          }} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-stone-600">Purpose</label>
+                          <input type="text" value={proc.purpose} onChange={e => {
+                            const updated = [...(patient.extraProcedures || [])];
+                            updated[idx].purpose = e.target.value;
+                            setPatient({ ...patient, extraProcedures: updated });
+                          }} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-stone-600">Frequency / Duration</label>
+                          <input type="text" value={proc.durationFrequency} onChange={e => {
+                            const updated = [...(patient.extraProcedures || [])];
+                            updated[idx].durationFrequency = e.target.value;
+                            setPatient({ ...patient, extraProcedures: updated });
+                          }} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <label className="text-xs font-medium text-stone-600">Remarks</label>
+                        <textarea value={proc.remarks} onChange={e => {
+                          const updated = [...(patient.extraProcedures || [])];
+                          updated[idx].remarks = e.target.value;
+                          setPatient({ ...patient, extraProcedures: updated });
+                        }} rows={5} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

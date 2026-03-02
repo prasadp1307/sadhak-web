@@ -203,12 +203,12 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                 </div>
               </div>
 
-              {/* Ayurvedic Assessment */}
+              {/* Ayurvedic Assessment - Patient Profile */}
               <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
                 <div className="border-b border-amber-100 bg-gradient-to-r from-teal-50 to-emerald-50 p-4 -m-6 mb-6 rounded-t-lg">
-                  <h3 className="text-stone-800 font-semibold">Ayurvedic Assessment</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <h3 className="text-stone-800 font-semibold">Ayurvedic Profile</h3>
+
+                </div>                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   <div>
                     <label className="text-sm font-medium text-stone-500">Nadi Parikshan</label>
                     <p className="text-stone-700">{patient.nadiParikshan}</p>
@@ -217,14 +217,6 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                     <label className="text-sm font-medium text-stone-500">Condition (Lakshana)</label>
                     <p className="text-stone-700">{patient.condition}</p>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-stone-500">H/O</label>
-                    <p className="text-stone-700">{patient.ho}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-stone-500">Treatment</label>
-                    <p className="text-stone-700">{patient.treatment}</p>
-                  </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-stone-500">Parikshan (General Assessment)</label>
                     <p className="text-stone-700">{patient.parikshan}</p>
@@ -232,9 +224,83 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                 </div>
               </div>
 
-              {/* Appointment History */}
+              {/* Panchakarma Therapies */}
+              <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
+                <div className="border-b border-amber-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4 -m-6 mb-6 rounded-t-lg">
+                  <h3 className="text-stone-800 font-semibold">Panchakarma Therapies</h3>
+                </div>
+                {!patient.panchakarmaTherapies || patient.panchakarmaTherapies.length === 0 ? (
+                  <p className="text-stone-500 italic">No Panchakarma therapies recorded.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {patient.panchakarmaTherapies.map((therapy, idx) => (
+                      <div key={idx} className="border border-amber-100 rounded-md p-4 bg-amber-50/20">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 uppercase">Therapy</label>
+                            <p className="font-semibold text-stone-800">{therapy.name}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 uppercase">Duration</label>
+                            <p className="text-stone-700">{therapy.duration}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 uppercase">Schedule</label>
+                            <p className="text-stone-700">{therapy.schedule}</p>
+                          </div>
+                        </div>
+                        {therapy.notes && (
+                          <div className="mt-2 pt-2 border-t border-amber-50">
+                            <label className="text-xs font-medium text-stone-500 uppercase">Notes</label>
+                            <p className="text-sm text-stone-700">{therapy.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Extra Procedures */}
               <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
                 <div className="border-b border-amber-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 -m-6 mb-6 rounded-t-lg">
+                  <h3 className="text-stone-800 font-semibold">Extra Procedures</h3>
+                </div>
+                {!patient.extraProcedures || patient.extraProcedures.length === 0 ? (
+                  <p className="text-stone-500 italic">No extra procedures recorded.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {patient.extraProcedures.map((proc, idx) => (
+                      <div key={idx} className="border border-indigo-100 rounded-md p-4 bg-indigo-50/20">
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 uppercase">Procedure</label>
+                            <p className="font-semibold text-stone-800">{proc.name}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 uppercase">Purpose</label>
+                            <p className="text-stone-700">{proc.purpose}</p>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-stone-500 uppercase">Frequency</label>
+                            <p className="text-stone-700">{proc.durationFrequency}</p>
+                          </div>
+                        </div>
+                        {proc.remarks && (
+                          <div className="mt-2 pt-2 border-t border-indigo-50">
+                            <label className="text-xs font-medium text-stone-500 uppercase">Remarks</label>
+                            <p className="text-sm text-stone-700">{proc.remarks}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Appointment History */}
+              <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
+                <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 to-teal-50 p-4 -m-6 mb-6 rounded-t-lg">
                   <h3 className="text-stone-800 font-semibold">Appointment History</h3>
                 </div>
                 {appointments.length === 0 ? (
@@ -311,7 +377,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
 }
 
 function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patientId: string, followUps: FollowUp[], onFollowUpAdded: () => void }) {
-  const [view, setView] = useState<'list' | 'add' | 'details'>('list');
+  const [view, setView] = useState<'details' | 'add'>('add');
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -346,7 +412,6 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         paymentAmount: 0,
         notes: ''
       });
-      setView('list');
       alert('Follow-up recorded successfully');
     } catch (error) {
       console.error("Error adding follow-up:", error);
@@ -356,150 +421,138 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
     }
   };
 
-  if (view === 'add') {
-    return (
-      <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
-        <div className="border-b border-amber-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center">
-          <h3 className="text-stone-800 font-semibold">New Follow-Up Entry</h3>
-          <button onClick={() => setView('list')} className="text-stone-500 hover:text-stone-700 text-sm font-medium">Cancel</button>
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Sidebar: Follow-Up History List */}
+      <div className="lg:col-span-1 space-y-4">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-bold text-stone-800">History</h3>
+          <button
+            onClick={() => setView('add')}
+            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-2 py-1 rounded border border-emerald-100"
+          >
+            + New Follow-Up
+          </button>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-stone-500">Date</label>
-              <input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" required />
+        <div className="border-amber-200 rounded-lg border bg-white shadow-sm overflow-hidden h-fit max-h-[600px] overflow-y-auto">
+          {followUps.length === 0 ? (
+            <div className="p-4 text-center bg-stone-50/50">
+              <p className="text-xs text-stone-500 italic">No records.</p>
             </div>
-            <div>
-              <label className="text-xs font-medium text-stone-500">Time</label>
-              <input type="time" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" required />
+          ) : (
+            <div className="divide-y divide-stone-100">
+              {[...followUps].sort((a, b) => new Date(b.date + 'T' + (b.time || '00:00')).getTime() - new Date(a.date + 'T' + (a.time || '00:00')).getTime()).map((followUp: FollowUp) => (
+                <div
+                  key={followUp.id}
+                  onClick={() => { setSelectedFollowUp(followUp); setView('details'); }}
+                  className={`p-3 cursor-pointer transition-colors ${selectedFollowUp?.id === followUp.id ? 'bg-emerald-50 border-l-4 border-emerald-500' : 'hover:bg-amber-50/30'}`}
+                >
+                  <p className="font-bold text-sm text-stone-800">{followUp.date}</p>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-stone-500">{followUp.time || '--:--'}</span>
+                    <span className="text-xs font-semibold text-emerald-600">₹{followUp.paymentAmount || 0}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-stone-500">Nadi Parikshan</label>
-            <textarea value={formData.nadiParikshan} onChange={e => setFormData({ ...formData, nadiParikshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-stone-500">Lakshan</label>
-            <textarea value={formData.lakshan} onChange={e => setFormData({ ...formData, lakshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-stone-500">General Assessment (Parikshan)</label>
-            <textarea value={formData.generalAssessment} onChange={e => setFormData({ ...formData, generalAssessment: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-stone-500">Notes / Treatment</label>
-            <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={3} />
-          </div>
-          <div className="w-1/3">
-            <label className="text-xs font-medium text-stone-500">Payment (₹)</label>
-            <input type="number" value={formData.paymentAmount} onChange={e => setFormData({ ...formData, paymentAmount: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500 shadow-sm" />
-          </div>
-          <div className="flex justify-end pt-4">
-            <button type="submit" disabled={loading} className="rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-all">
-              {loading ? "Saving..." : "Save Follow-Up"}
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
       </div>
-    );
-  }
 
-  if (view === 'details' && selectedFollowUp) {
-    return (
-      <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
-        <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center">
-          <h3 className="text-stone-800 font-semibold">Follow-Up Details - {selectedFollowUp.date}</h3>
-          <button onClick={() => setView('list')} className="text-stone-500 hover:text-stone-700 text-sm font-medium">Back to List</button>
-        </div>
-        <div className="space-y-6 pt-2">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Date & Time</p>
-              <p className="font-semibold text-stone-800">{selectedFollowUp.date} at {selectedFollowUp.time}</p>
+      {/* Main Content: Form or Details */}
+      <div className="lg:col-span-2">
+        {view === 'add' ? (
+          <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
+            <div className="border-b border-amber-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 -m-6 mb-6 rounded-t-lg">
+              <h3 className="text-stone-800 font-semibold">Log New Follow-Up</h3>
             </div>
-            <div>
-              <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Payment Received</p>
-              <p className="font-bold text-emerald-600 text-lg">₹{selectedFollowUp.paymentAmount || 0}</p>
-            </div>
-          </div>
-          <div className="space-y-4">
-            <div className="bg-amber-50/30 p-4 rounded-md border border-amber-100">
-              <p className="text-xs font-semibold text-amber-800 uppercase mb-2">Clinical Assessment</p>
-              <div className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-stone-500">Date</label>
+                  <input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" required />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-stone-500">Time</label>
+                  <input type="time" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" required />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-stone-500">Nadi Parikshan</label>
-                  <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1">{selectedFollowUp.nadiParikshan || 'N/A'}</p>
+                  <textarea value={formData.nadiParikshan} onChange={e => setFormData({ ...formData, nadiParikshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-stone-500">Lakshan</label>
-                  <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1">{selectedFollowUp.lakshan || 'N/A'}</p>
+                  <textarea value={formData.lakshan} onChange={e => setFormData({ ...formData, lakshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
                 </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-stone-500">General Assessment (Parikshan)</label>
+                <textarea value={formData.generalAssessment} onChange={e => setFormData({ ...formData, generalAssessment: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-stone-500">Notes / Treatment</label>
+                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={3} />
+              </div>
+              <div className="w-1/2">
+                <label className="text-xs font-medium text-stone-500">Payment (₹)</label>
+                <input type="number" value={formData.paymentAmount} onChange={e => setFormData({ ...formData, paymentAmount: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+              </div>
+              <div className="flex justify-end pt-2">
+                <button type="submit" disabled={loading} className="rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-all">
+                  {loading ? "Saving..." : "Save Follow-Up"}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : selectedFollowUp ? (
+          <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
+            <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center">
+              <h3 className="text-stone-800 font-semibold">Entry Details - {selectedFollowUp.date}</h3>
+              <button
+                onClick={() => setView('add')}
+                className="text-stone-500 hover:text-stone-700 text-sm font-medium border border-stone-300 px-3 py-1 rounded bg-white shadow-sm"
+              >
+                Back to New Entry
+              </button>
+            </div>
+            <div className="space-y-6 pt-2">
+              <div className="flex justify-between items-start">
                 <div>
-                  <label className="text-xs font-medium text-stone-500">General Assessment</label>
-                  <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1">{selectedFollowUp.generalAssessment || 'N/A'}</p>
+                  <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Date & Time</p>
+                  <p className="font-semibold text-stone-800">{selectedFollowUp.date} at {selectedFollowUp.time}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Payment</p>
+                  <p className="font-bold text-emerald-600 text-lg">₹{selectedFollowUp.paymentAmount || 0}</p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="bg-amber-50/30 p-4 rounded-md border border-amber-100 space-y-4">
+                  <div>
+                    <label className="text-xs font-semibold text-amber-800 uppercase">Nadi Parikshan</label>
+                    <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50">{selectedFollowUp.nadiParikshan || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-amber-800 uppercase">Lakshan</label>
+                    <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50">{selectedFollowUp.lakshan || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-amber-800 uppercase">General Assessment</label>
+                    <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50">{selectedFollowUp.generalAssessment || 'N/A'}</p>
+                  </div>
+                </div>
+                <div className="bg-emerald-50/30 p-4 rounded-md border border-emerald-100">
+                  <label className="text-xs font-semibold text-emerald-800 uppercase">Notes & Treatment</label>
+                  <p className="text-sm text-stone-800 bg-white p-3 rounded mt-1 border border-emerald-50">{selectedFollowUp.notes || 'No notes provided.'}</p>
                 </div>
               </div>
             </div>
-            <div className="bg-emerald-50/30 p-4 rounded-md border border-emerald-100">
-              <p className="text-xs font-semibold text-emerald-800 uppercase mb-2">Notes & Treatment</p>
-              <p className="text-sm text-stone-800 bg-white p-3 rounded">{selectedFollowUp.notes || 'No notes provided.'}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h3 className="text-xl font-bold text-stone-800">Follow-Up History</h3>
-        <button
-          onClick={() => setView('add')}
-          className="flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700"
-        >
-          <span className="text-lg">+</span> Add Follow-Up
-        </button>
-      </div>
-
-      <div className="border-amber-200 rounded-lg border bg-white shadow-sm overflow-hidden">
-        {followUps.length === 0 ? (
-          <div className="p-8 text-center bg-stone-50/50">
-            <p className="text-stone-500 italic">No follow-up records found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-stone-200">
-              <thead className="bg-stone-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider">Follow-Up Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider">Created Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider">Payment</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-stone-500 uppercase tracking-wider">Action</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-stone-100">
-                {[...followUps].sort((a, b) => new Date(b.date + 'T' + (b.time || '00:00')).getTime() - new Date(a.date + 'T' + (a.time || '00:00')).getTime()).map((followUp: FollowUp) => (
-                  <tr key={followUp.id} className="hover:bg-amber-50/30 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-emerald-700">
-                      <button onClick={() => { setSelectedFollowUp(followUp); setView('details'); }} className="hover:underline">
-                        {followUp.date}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-600">{followUp.time || '--:--'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-800">₹{followUp.paymentAmount || 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => { setSelectedFollowUp(followUp); setView('details'); }}
-                        className="text-emerald-600 hover:text-emerald-800"
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex items-center justify-center p-12 border-2 border-dashed border-stone-200 rounded-lg">
+            <p className="text-stone-500">Select a follow-up from the history list to view details.</p>
           </div>
         )}
       </div>
