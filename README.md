@@ -1,5 +1,12 @@
 # Sadhak Ayurved - Ayurvedic Clinic Management System
 
+![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-38B2AC?logo=tailwind-css&logoColor=white)
+![Firebase](https://img.shields.io/badge/Firebase-Auth-orange?logo=firebase)
+![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-Radix-black)
+
 A comprehensive web application for managing Ayurvedic clinics, built with Next.js 14, React, TypeScript, and Tailwind CSS.
 
 ## Features
