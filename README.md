@@ -53,12 +53,8 @@ To test authentication, create dummy users:
 npx tsx scripts/create-dummy-users.ts
 ```
 
-This creates 3 test users:
-- user1@sadhak.com (password: password123)
-- user2@sadhak.com (password: password123)
-- user3@sadhak.com (password: password123)
 
-**View users at:** http://localhost:3000/admin/users
+
 
 For detailed instructions, see `DUMMY_USERS_GUIDE.md`
 
