@@ -111,7 +111,6 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
     );
   }
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/40 to-emerald-50/60">
       <header className="sticky top-0 z-50 border-b-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-emerald-50 shadow-lg backdrop-blur-sm">
@@ -142,74 +141,39 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
           </div>
 
           <form className="space-y-6" onSubmit={handleSave}>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
-                <div className="border-b border-amber-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 -m-6 mb-6 rounded-t-lg">
-                  <h3 className="text-stone-800 font-semibold">Basic Information</h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Name</label>
-                    <input type="text" value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Age</label>
-                    <input type="number" value={patient.age} onChange={e => setPatient({ ...patient, age: parseInt(e.target.value) || 0 })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Date of Birth</label>
-                    <input type="date" value={patient.dob || ""} onChange={e => setPatient({ ...patient, dob: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Address</label>
-                    <input type="text" value={patient.address} onChange={e => setPatient({ ...patient, address: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Phone Number</label>
-                    <input type="text" value={patient.phoneNumber} onChange={e => setPatient({ ...patient, phoneNumber: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Job</label>
-                    <input type="text" value={patient.job} onChange={e => setPatient({ ...patient, job: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Reference</label>
-                    <input type="text" value={patient.reference} onChange={e => setPatient({ ...patient, reference: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                </div>
+            {/* Basic Information */}
+            <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
+              <div className="border-b border-amber-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 -m-6 mb-6 rounded-t-lg">
+                <h3 className="text-stone-800 font-semibold">Basic Information</h3>
               </div>
-
-              <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
-                <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-4 -m-6 mb-6 rounded-t-lg">
-                  <h3 className="text-stone-800 font-semibold">Medical Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Name</label>
+                  <input type="text" value={patient.name} onChange={e => setPatient({ ...patient, name: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Symptoms</label>
-                    <textarea value={patient.symptoms || ""} onChange={e => setPatient({ ...patient, symptoms: e.target.value })} rows={3} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Treatment Plan</label>
-                    <textarea value={patient.treatmentPlan || ""} onChange={e => setPatient({ ...patient, treatmentPlan: e.target.value })} rows={3} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Last Visit</label>
-                    <input type="date" value={patient.lastVisit || ""} onChange={e => setPatient({ ...patient, lastVisit: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Next Appointment (Optional)</label>
-                    <input type="date" value={patient.nextAppointmentDate || ""} onChange={e => setPatient({ ...patient, nextAppointmentDate: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Status</label>
-                    <select value={patient.status} onChange={e => setPatient({ ...patient, status: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500">
-                      <option value="Active">Active</option>
-                      <option value="Follow-up">Follow-up</option>
-                      <option value="Inactive">Inactive</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Age</label>
+                  <input type="number" value={patient.age} onChange={e => setPatient({ ...patient, age: parseInt(e.target.value) || 0 })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Date of Birth</label>
+                  <input type="date" value={patient.dob || ""} onChange={e => setPatient({ ...patient, dob: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Phone Number</label>
+                  <input type="text" value={patient.phoneNumber} onChange={e => setPatient({ ...patient, phoneNumber: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-stone-700">Address</label>
+                  <input type="text" value={patient.address} onChange={e => setPatient({ ...patient, address: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Job</label>
+                  <input type="text" value={patient.job} onChange={e => setPatient({ ...patient, job: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Reference</label>
+                  <input type="text" value={patient.reference} onChange={e => setPatient({ ...patient, reference: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
               </div>
             </div>
@@ -219,18 +183,38 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
               <div className="border-b border-amber-100 bg-gradient-to-r from-teal-50 to-emerald-50 p-4 -m-6 mb-6 rounded-t-lg">
                 <h3 className="text-stone-800 font-semibold">Ayurvedic Profile</h3>
               </div>
-              <div className="space-y-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-stone-700">Nadi Parikshan</label>
-                  <textarea value={patient.nadiParikshan || ""} onChange={e => setPatient({ ...patient, nadiParikshan: e.target.value })} rows={5} placeholder="Pulse diagnosis details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <textarea value={patient.nadiParikshan || ""} onChange={e => setPatient({ ...patient, nadiParikshan: e.target.value })} rows={3} placeholder="Pulse diagnosis details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-stone-700">Condition (Lakshana)</label>
-                  <textarea value={patient.condition || ""} onChange={e => setPatient({ ...patient, condition: e.target.value })} rows={5} placeholder="Symptoms and signs..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <textarea value={patient.condition || ""} onChange={e => setPatient({ ...patient, condition: e.target.value })} rows={3} placeholder="Symptoms and signs..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-stone-700">General Assessment (Parikshan)</label>
+                  <textarea value={patient.parikshan || ""} onChange={e => setPatient({ ...patient, parikshan: e.target.value })} rows={3} placeholder="Mal, Mutra, Ksudha, Jivha, Nidra..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-stone-700">Treatment Plan (Ayurvedic)</label>
+                  <textarea value={patient.treatmentPlan || ""} onChange={e => setPatient({ ...patient, treatmentPlan: e.target.value })} rows={3} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">General Assessment (Parikshan)</label>
-                  <textarea value={patient.parikshan || ""} onChange={e => setPatient({ ...patient, parikshan: e.target.value })} rows={5} placeholder="Mal, Mutra, Ksudha, Jivha, Nidra..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <label className="block text-sm font-medium text-stone-700">Last Visit Date</label>
+                  <input type="date" value={patient.lastVisit || ""} onChange={e => setPatient({ ...patient, lastVisit: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Next Appointment Date</label>
+                  <input type="date" value={patient.nextAppointmentDate || ""} onChange={e => setPatient({ ...patient, nextAppointmentDate: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div className="md:col-span-2 md:w-1/2">
+                  <label className="block text-sm font-medium text-stone-700">Status</label>
+                  <select value={patient.status} onChange={e => setPatient({ ...patient, status: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500">
+                    <option value="Active">Active</option>
+                    <option value="Under Treatment">Under Treatment</option>
+                    <option value="Recovered">Recovered</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -299,7 +283,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                           const updated = [...(patient.panchakarmaTherapies || [])];
                           updated[idx].notes = e.target.value;
                           setPatient({ ...patient, panchakarmaTherapies: updated });
-                        }} rows={5} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                        }} rows={2} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
                       </div>
                     </div>
                   ))
@@ -371,7 +355,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                           const updated = [...(patient.extraProcedures || [])];
                           updated[idx].remarks = e.target.value;
                           setPatient({ ...patient, extraProcedures: updated });
-                        }} rows={5} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                        }} rows={2} className="mt-1 block w-full rounded-md border border-stone-300 px-2 py-1 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
                       </div>
                     </div>
                   ))
@@ -379,6 +363,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
               </div>
             </div>
 
+            {/* Existing Follow-Ups */}
             {followUps.length > 0 && (
               <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
                 <div className="border-b border-amber-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4 -m-6 mb-6 rounded-t-lg">
@@ -450,6 +435,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
               </div>
             )}
 
+            {/* Log New Follow-Up */}
             <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
               <div className="border-b border-amber-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4 -m-6 mb-6 rounded-t-lg">
                 <h3 className="text-stone-800 font-semibold">Log New Follow-Up</h3>
