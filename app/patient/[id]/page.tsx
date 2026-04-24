@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { getDocument, queryDocuments, createDocument, COLLECTIONS, Patient, FollowUp, Payment, Appointment } from '@/lib/firestore-service';
+import { getDocument, queryDocuments, createDocument, updateDocument, deleteDocument, COLLECTIONS, Patient, FollowUp, Payment, Appointment } from '@/lib/firestore-service';
 import { where } from 'firebase/firestore';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Edit, Trash2 } from 'lucide-react';
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -14,6 +18,9 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'profile' | 'payments' | 'follow-ups'>('profile');
+  const [showEditPayment, setShowEditPayment] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
+  const [editPaymentForm, setEditPaymentForm] = useState({date: '', consultingFee: 0, medicineCharges: 0, procedureCharges: 0, panchakarmaCharges: 0, extraCharges: 0, paidAmount: 0, notes: ''});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,6 +43,30 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     };
     fetchData();
   }, [params.id]);
+
+  const handleEditPaymentClick = (p: Payment) => {
+    setEditingPayment(p);
+    setEditPaymentForm({date: p.date, consultingFee: p.consultingFee, medicineCharges: p.medicineCharges, procedureCharges: p.procedureCharges, panchakarmaCharges: p.panchakarmaCharges, extraCharges: p.extraCharges, paidAmount: p.paidAmount, notes: (p as any).notes || ''});
+    setShowEditPayment(true);
+  };
+
+  const handleSavePayment = async () => {
+    if (!editingPayment) return;
+    const totalAmount = editPaymentForm.consultingFee + editPaymentForm.medicineCharges + editPaymentForm.procedureCharges + editPaymentForm.panchakarmaCharges + editPaymentForm.extraCharges;
+    const balanceAmount = totalAmount - editPaymentForm.paidAmount;
+    await updateDocument(COLLECTIONS.PAYMENTS, editingPayment.id, {...editPaymentForm, totalAmount, balanceAmount});
+    setPayments(payments.map(p => p.id === editingPayment.id ? {...p, ...editPaymentForm, totalAmount, balanceAmount} : p));
+    setShowEditPayment(false);
+  };
+
+  const handleDeletePaymentClick = (p: Payment) => {
+    if (confirm('Delete this payment? This cannot be undone.')) {
+      deleteDocument(COLLECTIONS.PAYMENTS, p.id).then(() => setPayments(payments.filter(x => x.id !== p.id)));
+    }
+  };
+
+  const editTotal = editPaymentForm.consultingFee + editPaymentForm.medicineCharges + editPaymentForm.procedureCharges + editPaymentForm.panchakarmaCharges + editPaymentForm.extraCharges;
+  const editBalance = editTotal - editPaymentForm.paidAmount;
 
   if (loading) {
     return (
@@ -353,10 +384,9 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           {activeTab === 'payments' && (
             <div className="space-y-6">
               <PaymentTabContent patientId={params.id} payments={payments} onPaymentAdded={() => {
-                // Refresh payments
                 queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [where('patientId', '==', params.id)])
                   .then(setPayments);
-              }} />
+              }} onEditPayment={handleEditPaymentClick} onDeletePayment={handleDeletePaymentClick} />
             </div>
           )}
 
@@ -372,6 +402,34 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           </div>
         </div>
       </main>
+
+      {showEditPayment && editingPayment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-bold mb-4">Edit Payment</h3>
+            <div className="space-y-4">
+              <div><Label className="text-sm font-medium">Date</Label><Input type="date" value={editPaymentForm.date} onChange={e => setEditPaymentForm({...editPaymentForm, date: e.target.value})} className="mt-1" /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label className="text-sm font-medium">Consulting Fee</Label><Input type="number" value={editPaymentForm.consultingFee} onChange={e => setEditPaymentForm({...editPaymentForm, consultingFee: parseInt(e.target.value) || 0})} className="mt-1" /></div>
+                <div><Label className="text-sm font-medium">Medicine Charges</Label><Input type="number" value={editPaymentForm.medicineCharges} onChange={e => setEditPaymentForm({...editPaymentForm, medicineCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
+                <div><Label className="text-sm font-medium">Procedure Charges</Label><Input type="number" value={editPaymentForm.procedureCharges} onChange={e => setEditPaymentForm({...editPaymentForm, procedureCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
+                <div><Label className="text-sm font-medium">Panchakarma</Label><Input type="number" value={editPaymentForm.panchakarmaCharges} onChange={e => setEditPaymentForm({...editPaymentForm, panchakarmaCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
+                <div><Label className="text-sm font-medium">Extra Charges</Label><Input type="number" value={editPaymentForm.extraCharges} onChange={e => setEditPaymentForm({...editPaymentForm, extraCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
+                <div><Label className="text-sm font-medium">Paid Amount</Label><Input type="number" value={editPaymentForm.paidAmount} onChange={e => setEditPaymentForm({...editPaymentForm, paidAmount: parseInt(e.target.value) || 0})} className="mt-1" /></div>
+              </div>
+              <div><Label className="text-sm font-medium">Notes</Label><Input value={editPaymentForm.notes} onChange={e => setEditPaymentForm({...editPaymentForm, notes: e.target.value})} className="mt-1" placeholder="Optional notes..." /></div>
+              <div className="bg-stone-100 p-3 rounded-md">
+                <div className="flex justify-between text-sm"><span>Total:</span><span className="font-bold">₹{editTotal}</span></div>
+                <div className="flex justify-between text-sm"><span>Balance:</span><span className={`font-bold ${editBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`}>₹{editBalance}</span></div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" onClick={() => setShowEditPayment(false)} className="flex-1">Cancel</Button>
+              <Button onClick={handleSavePayment} className="flex-1">Save</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -560,7 +618,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
   );
 }
 
-function PaymentTabContent({ patientId, payments, onPaymentAdded }: { patientId: string, payments: Payment[], onPaymentAdded: () => void }) {
+function PaymentTabContent({ patientId, payments, onPaymentAdded, onEditPayment, onDeletePayment }: { patientId: string, payments: Payment[], onPaymentAdded: () => void, onEditPayment?: (p: Payment) => void, onDeletePayment?: (p: Payment) => void }) {
   const [formData, setFormData] = useState({
     consultingFee: 0,
     medicineCharges: 0,
@@ -672,6 +730,7 @@ function PaymentTabContent({ patientId, payments, onPaymentAdded }: { patientId:
                   <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase text-right">Total</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase text-right">Paid</th>
                   <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase text-right">Balance</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-stone-100">
@@ -690,6 +749,12 @@ function PaymentTabContent({ patientId, payments, onPaymentAdded }: { patientId:
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-800 text-right font-bold">₹{p.totalAmount}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-emerald-600 text-right font-bold">₹{p.paidAmount}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600 text-right font-bold">₹{p.balanceAmount}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex gap-1">
+                        <button onClick={() => onEditPayment?.(p)} className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors" title="Edit"><Edit className="h-4 w-4" /></button>
+                        <button onClick={() => onDeletePayment?.(p)} className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

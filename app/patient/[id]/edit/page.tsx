@@ -200,6 +200,14 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                   <label className="block text-sm font-medium text-stone-700">Treatment Plan (Ayurvedic)</label>
                   <textarea value={patient.treatmentPlan || ""} onChange={e => setPatient({ ...patient, treatmentPlan: e.target.value })} rows={5} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
                 </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-stone-700">History</label>
+                  <textarea value={patient.history || ""} onChange={e => setPatient({ ...patient, history: e.target.value })} rows={4} placeholder="Past treatment notes, medical history, or related details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Treatment Days</label>
+                  <input type="number" value={patient.treatment_days || ""} onChange={e => setPatient({ ...patient, treatment_days: parseInt(e.target.value) || undefined })} placeholder="Number of days" className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Last Visit Date</label>
                   <input type="date" value={patient.lastVisit || ""} onChange={e => setPatient({ ...patient, lastVisit: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
@@ -208,7 +216,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                   <label className="block text-sm font-medium text-stone-700">Next Appointment Date</label>
                   <input type="date" value={patient.nextAppointmentDate || ""} onChange={e => setPatient({ ...patient, nextAppointmentDate: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
-                <div className="md:col-span-2 md:w-1/2">
+                <div>
                   <label className="block text-sm font-medium text-stone-700">Status</label>
                   <select value={patient.status} onChange={e => setPatient({ ...patient, status: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500">
                     <option value="Active">Active</option>
