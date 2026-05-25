@@ -238,19 +238,41 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
               <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
                 <div className="border-b border-amber-100 bg-gradient-to-r from-teal-50 to-emerald-50 p-4 -m-6 mb-6 rounded-t-lg">
                   <h3 className="text-stone-800 font-semibold">Ayurvedic Profile</h3>
-
-                </div>                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                  <div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                  <div className="md:col-span-2">
                     <label className="text-sm font-medium text-stone-500">Nadi Parikshan</label>
-                    <p className="text-stone-700">{patient.nadiParikshan}</p>
+                    <p className="text-stone-700 whitespace-pre-wrap">{patient.nadiParikshan || "N/A"}</p>
                   </div>
-                  <div>
+                  <div className="md:col-span-1">
                     <label className="text-sm font-medium text-stone-500">Condition (Lakshana)</label>
-                    <p className="text-stone-700">{patient.condition}</p>
+                    <p className="text-stone-700 whitespace-pre-wrap">{patient.condition || "N/A"}</p>
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="text-sm font-medium text-stone-500">History</label>
+                    <p className="text-stone-700 whitespace-pre-wrap">{patient.history || "N/A"}</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-stone-500">Parikshan (General Assessment)</label>
-                    <p className="text-stone-700">{patient.parikshan}</p>
+                    <p className="text-stone-700 whitespace-pre-wrap">{patient.parikshan || "N/A"}</p>
+                  </div>
+                  <div className="md:col-span-1">
+                    <label className="text-sm font-medium text-stone-500">Treatment Plan (Ayurvedic)</label>
+                    <p className="text-stone-700 whitespace-pre-wrap">{patient.treatmentPlan || "N/A"}</p>
+                  </div>
+                  <div className="md:col-span-1 space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-stone-500">Treatment Days</label>
+                      <p className="text-stone-700 font-semibold">{patient.treatment_days ? `${patient.treatment_days} Days` : "N/A"}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-stone-500">Status</label>
+                      <div className="mt-1">
+                        <span className={`inline-block rounded-full px-3 py-0.5 text-xs font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : patient.status === "Under Treatment" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                          {patient.status}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -412,9 +434,9 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
               <div className="grid grid-cols-2 gap-4">
                 <div><Label className="text-sm font-medium">Consulting Fee</Label><Input type="number" value={editPaymentForm.consultingFee} onChange={e => setEditPaymentForm({...editPaymentForm, consultingFee: parseInt(e.target.value) || 0})} className="mt-1" /></div>
                 <div><Label className="text-sm font-medium">Medicine Charges</Label><Input type="number" value={editPaymentForm.medicineCharges} onChange={e => setEditPaymentForm({...editPaymentForm, medicineCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
+                <div><Label className="text-sm font-medium">Extra Charges</Label><Input type="number" value={editPaymentForm.extraCharges} onChange={e => setEditPaymentForm({...editPaymentForm, extraCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
                 <div><Label className="text-sm font-medium">Procedure Charges</Label><Input type="number" value={editPaymentForm.procedureCharges} onChange={e => setEditPaymentForm({...editPaymentForm, procedureCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
                 <div><Label className="text-sm font-medium">Panchakarma</Label><Input type="number" value={editPaymentForm.panchakarmaCharges} onChange={e => setEditPaymentForm({...editPaymentForm, panchakarmaCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
-                <div><Label className="text-sm font-medium">Extra Charges</Label><Input type="number" value={editPaymentForm.extraCharges} onChange={e => setEditPaymentForm({...editPaymentForm, extraCharges: parseInt(e.target.value) || 0})} className="mt-1" /></div>
                 <div><Label className="text-sm font-medium">Paid Amount</Label><Input type="number" value={editPaymentForm.paidAmount} onChange={e => setEditPaymentForm({...editPaymentForm, paidAmount: parseInt(e.target.value) || 0})} className="mt-1" /></div>
               </div>
               <div><Label className="text-sm font-medium">Notes</Label><Input value={editPaymentForm.notes} onChange={e => setEditPaymentForm({...editPaymentForm, notes: e.target.value})} className="mt-1" placeholder="Optional notes..." /></div>
@@ -446,7 +468,10 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
     lakshan: '',
     generalAssessment: '',
     paymentAmount: 0,
-    notes: ''
+    notes: '',
+    treatmentPlan: '',
+    treatment_days: undefined as number | undefined,
+    history: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -468,7 +493,10 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         lakshan: '',
         generalAssessment: '',
         paymentAmount: 0,
-        notes: ''
+        notes: '',
+        treatmentPlan: '',
+        treatment_days: undefined,
+        history: ''
       });
       alert('Follow-up recorded successfully');
     } catch (error) {
@@ -536,18 +564,30 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="md:col-span-2">
                   <label className="text-xs font-medium text-stone-500">Nadi Parikshan</label>
                   <textarea value={formData.nadiParikshan} onChange={e => setFormData({ ...formData, nadiParikshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
                 </div>
-                <div>
+                <div className="md:col-span-1">
                   <label className="text-xs font-medium text-stone-500">Lakshan</label>
                   <textarea value={formData.lakshan} onChange={e => setFormData({ ...formData, lakshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
                 </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-stone-500">General Assessment (Parikshan)</label>
-                <textarea value={formData.generalAssessment} onChange={e => setFormData({ ...formData, generalAssessment: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
+                <div className="md:col-span-1">
+                  <label className="text-xs font-medium text-stone-500">History</label>
+                  <textarea value={formData.history} onChange={e => setFormData({ ...formData, history: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} placeholder="Past treatment notes..." />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="text-xs font-medium text-stone-500">General Assessment (Parikshan)</label>
+                  <textarea value={formData.generalAssessment} onChange={e => setFormData({ ...formData, generalAssessment: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-xs font-medium text-stone-500">Treatment Plan (Ayurvedic)</label>
+                  <textarea value={formData.treatmentPlan} onChange={e => setFormData({ ...formData, treatmentPlan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={3} />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-xs font-medium text-stone-500">Treatment Days</label>
+                  <input type="number" value={formData.treatment_days || ""} onChange={e => setFormData({ ...formData, treatment_days: parseInt(e.target.value) || undefined })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" placeholder="Number of days" />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-stone-500">Notes / Treatment</label>
@@ -588,17 +628,31 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
               </div>
               <div className="space-y-4">
                 <div className="bg-amber-50/30 p-4 rounded-md border border-amber-100 space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-amber-800 uppercase">Nadi Parikshan</label>
-                    <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50">{selectedFollowUp.nadiParikshan || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-amber-800 uppercase">Lakshan</label>
-                    <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50">{selectedFollowUp.lakshan || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-amber-800 uppercase">General Assessment</label>
-                    <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50">{selectedFollowUp.generalAssessment || 'N/A'}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-semibold text-amber-800 uppercase">Nadi Parikshan</label>
+                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.nadiParikshan || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="text-xs font-semibold text-amber-800 uppercase">Lakshan</label>
+                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.lakshan || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="text-xs font-semibold text-amber-800 uppercase">History</label>
+                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.history || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="text-xs font-semibold text-amber-800 uppercase">General Assessment</label>
+                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.generalAssessment || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="text-xs font-semibold text-amber-800 uppercase">Treatment Plan (Ayurvedic)</label>
+                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.treatmentPlan || 'N/A'}</p>
+                    </div>
+                    <div className="md:col-span-1">
+                      <label className="text-xs font-semibold text-amber-800 uppercase">Treatment Days</label>
+                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 font-semibold">{selectedFollowUp.treatment_days ? `${selectedFollowUp.treatment_days} Days` : 'N/A'}</p>
+                    </div>
                   </div>
                 </div>
                 <div className="bg-emerald-50/30 p-4 rounded-md border border-emerald-100">
@@ -683,16 +737,16 @@ function PaymentTabContent({ patientId, payments, onPaymentAdded, onEditPayment,
             <input type="number" value={formData.medicineCharges} onChange={e => setFormData({ ...formData, medicineCharges: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
           </div>
           <div>
+            <label className="text-xs font-medium text-stone-500">Extra Charges (₹)</label>
+            <input type="number" value={formData.extraCharges} onChange={e => setFormData({ ...formData, extraCharges: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+          </div>
+          <div>
             <label className="text-xs font-medium text-stone-500">Procedure Charges (₹)</label>
             <input type="number" value={formData.procedureCharges} onChange={e => setFormData({ ...formData, procedureCharges: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
           </div>
           <div>
             <label className="text-xs font-medium text-stone-500">Panchakarma (₹)</label>
             <input type="number" value={formData.panchakarmaCharges} onChange={e => setFormData({ ...formData, panchakarmaCharges: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-stone-500">Extra Charges (₹)</label>
-            <input type="number" value={formData.extraCharges} onChange={e => setFormData({ ...formData, extraCharges: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
           </div>
           <div className="md:col-span-1 bg-emerald-50 p-2 rounded border border-emerald-100">
             <label className="text-xs font-semibold text-emerald-800">Total Billed</label>
@@ -725,32 +779,32 @@ function PaymentTabContent({ patientId, payments, onPaymentAdded, onEditPayment,
             <table className="min-w-full divide-y divide-stone-200">
               <thead className="bg-stone-50">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase">Date</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase">Breakdown</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase text-right">Total</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase text-right">Paid</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase text-right">Balance</th>
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase">Actions</th>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Date of Pay</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Consulting Fee</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Medicine Fee</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Extra Fee</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Procedure Charge</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Panchakarma Charge</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Total Fee</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Paid Fee</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Balance Fee</th>
+                  <th className="px-4 py-2 text-center text-xs font-semibold text-stone-500 uppercase whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-stone-100">
                 {[...payments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((p: Payment) => (
                   <tr key={p.id}>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 font-medium">{p.date}</td>
-                    <td className="px-4 py-3 text-xs text-stone-500">
-                      <div className="grid grid-cols-2 gap-x-2">
-                        <span>Consult: ₹{p.consultingFee}</span>
-                        <span>Med: ₹{p.medicineCharges}</span>
-                        <span>Proc: ₹{p.procedureCharges}</span>
-                        <span>Panch: ₹{p.panchakarmaCharges}</span>
-                        {p.extraCharges > 0 && <span>Extra: ₹{p.extraCharges}</span>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-800 text-right font-bold">₹{p.totalAmount}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-emerald-600 text-right font-bold">₹{p.paidAmount}</td>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600 text-right font-bold">₹{p.balanceAmount}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex gap-1">
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.consultingFee || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.medicineCharges || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.extraCharges || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.procedureCharges || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.panchakarmaCharges || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-800 text-right font-bold">₹{p.totalAmount || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-emerald-600 text-right font-bold">₹{p.paidAmount || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-red-600 text-right font-bold">₹{p.balanceAmount || 0}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-center">
+                      <div className="flex gap-1 justify-center">
                         <button onClick={() => onEditPayment?.(p)} className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors" title="Edit"><Edit className="h-4 w-4" /></button>
                         <button onClick={() => onDeletePayment?.(p)} className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors" title="Delete"><Trash2 className="h-4 w-4" /></button>
                       </div>

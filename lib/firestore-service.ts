@@ -102,6 +102,9 @@ export interface FollowUp extends FirestoreDocument {
   lakshan?: string;
   generalAssessment?: string;
   paymentAmount?: number;
+  treatmentPlan?: string;
+  treatment_days?: number;
+  history?: string;
 }
 
 export interface Payment extends FirestoreDocument {
