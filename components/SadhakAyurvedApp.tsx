@@ -447,21 +447,21 @@ export default function SadhakAyurvedApp() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="patient-phone">Phone Number</Label>
-                <Input
-                  id="patient-phone"
-                  placeholder="Enter phone number"
-                  value={newPatient.phoneNumber}
-                  onChange={(e) => setNewPatient({ ...newPatient, phoneNumber: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="patient-height">Height (cm)</Label>
                 <Input
                   id="patient-height"
                   placeholder="Enter height in cm"
                   value={newPatient.height}
                   onChange={(e) => setNewPatient({ ...newPatient, height: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="patient-phone">Phone Number</Label>
+                <Input
+                  id="patient-phone"
+                  placeholder="Enter phone number"
+                  value={newPatient.phoneNumber}
+                  onChange={(e) => setNewPatient({ ...newPatient, phoneNumber: e.target.value })}
                 />
               </div>
               <div className="space-y-2">

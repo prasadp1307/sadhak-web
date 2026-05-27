@@ -169,16 +169,16 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                   <input type="date" value={patient.dob || ""} onChange={e => setPatient({ ...patient, dob: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Phone Number</label>
-                  <input type="text" value={patient.phoneNumber} onChange={e => setPatient({ ...patient, phoneNumber: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
+                  <label className="block text-sm font-medium text-stone-700">Height (cm)</label>
+                  <input type="text" value={patient.height || ""} onChange={e => setPatient({ ...patient, height: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-stone-700">Address</label>
                   <input type="text" value={patient.address} onChange={e => setPatient({ ...patient, address: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Height (cm)</label>
-                  <input type="text" value={patient.height || ""} onChange={e => setPatient({ ...patient, height: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                  <label className="block text-sm font-medium text-stone-700">Phone Number</label>
+                  <input type="text" value={patient.phoneNumber} onChange={e => setPatient({ ...patient, phoneNumber: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Weight (kg)</label>

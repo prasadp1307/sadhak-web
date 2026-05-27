@@ -198,12 +198,12 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                         <p className="text-stone-700">{patient.dob || "N/A"}</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-stone-500">Phone</label>
-                        <p className="text-stone-700">{patient.phoneNumber}</p>
-                      </div>
-                      <div>
                         <label className="text-sm font-medium text-stone-500">Height</label>
                         <p className="text-stone-700">{patient.height ? `${patient.height} cm` : "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-stone-500">Phone</label>
+                        <p className="text-stone-700">{patient.phoneNumber}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-stone-500">Weight</label>
