@@ -9,6 +9,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2 } from 'lucide-react';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
+
+function formatDisplayHtml(text: string | undefined): string {
+  if (!text) return "N/A";
+  // If the text does not contain any HTML tags, convert newlines to <br />
+  if (!/<[a-z][\s\S]*>/i.test(text)) {
+    return text.replace(/\n/g, '<br />');
+  }
+  return text;
+}
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -184,21 +194,33 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                         <p className="text-stone-700">{patient.age} years</p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-stone-500">Address</label>
-                        <p className="text-stone-700">{patient.address}</p>
+                        <label className="text-sm font-medium text-stone-500">Date of Birth</label>
+                        <p className="text-stone-700">{patient.dob || "N/A"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-stone-500">Phone</label>
                         <p className="text-stone-700">{patient.phoneNumber}</p>
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-stone-500">Job</label>
-                      <p className="text-stone-700">{patient.job}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-stone-500">Reference</label>
-                      <p className="text-stone-700">{patient.reference}</p>
+                      <div>
+                        <label className="text-sm font-medium text-stone-500">Height</label>
+                        <p className="text-stone-700">{patient.height ? `${patient.height} cm` : "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-stone-500">Weight</label>
+                        <p className="text-stone-700">{patient.weight ? `${patient.weight} kg` : "N/A"}</p>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium text-stone-500">Address</label>
+                        <p className="text-stone-700">{patient.address}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-stone-500">Job</label>
+                        <p className="text-stone-700">{patient.job || "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-stone-500">Reference</label>
+                        <p className="text-stone-700">{patient.reference || "N/A"}</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -242,23 +264,23 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-stone-500">Nadi Parikshan</label>
-                    <p className="text-stone-700 whitespace-pre-wrap">{patient.nadiParikshan || "N/A"}</p>
+                    <div className="text-stone-700 whitespace-pre-wrap prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(patient.nadiParikshan) }} />
                   </div>
                   <div className="md:col-span-1">
                     <label className="text-sm font-medium text-stone-500">Condition (Lakshana)</label>
-                    <p className="text-stone-700 whitespace-pre-wrap">{patient.condition || "N/A"}</p>
+                    <div className="text-stone-700 whitespace-pre-wrap prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(patient.condition) }} />
                   </div>
                   <div className="md:col-span-1">
                     <label className="text-sm font-medium text-stone-500">History</label>
-                    <p className="text-stone-700 whitespace-pre-wrap">{patient.history || "N/A"}</p>
+                    <div className="text-stone-700 whitespace-pre-wrap prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(patient.history) }} />
                   </div>
                   <div className="md:col-span-2">
                     <label className="text-sm font-medium text-stone-500">Parikshan (General Assessment)</label>
-                    <p className="text-stone-700 whitespace-pre-wrap">{patient.parikshan || "N/A"}</p>
+                    <div className="text-stone-700 whitespace-pre-wrap prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(patient.parikshan) }} />
                   </div>
                   <div className="md:col-span-1">
                     <label className="text-sm font-medium text-stone-500">Treatment Plan (Ayurvedic)</label>
-                    <p className="text-stone-700 whitespace-pre-wrap">{patient.treatmentPlan || "N/A"}</p>
+                    <div className="text-stone-700 whitespace-pre-wrap prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(patient.treatmentPlan) }} />
                   </div>
                   <div className="md:col-span-1 space-y-4">
                     <div>
@@ -566,23 +588,23 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="text-xs font-medium text-stone-500">Nadi Parikshan</label>
-                  <textarea value={formData.nadiParikshan} onChange={e => setFormData({ ...formData, nadiParikshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
+                  <RichTextEditor value={formData.nadiParikshan || ""} onChange={val => setFormData({ ...formData, nadiParikshan: val })} placeholder="Nadi details..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="text-xs font-medium text-stone-500">Lakshan</label>
-                  <textarea value={formData.lakshan} onChange={e => setFormData({ ...formData, lakshan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
+                  <RichTextEditor value={formData.lakshan || ""} onChange={val => setFormData({ ...formData, lakshan: val })} placeholder="Symptoms and signs..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="text-xs font-medium text-stone-500">History</label>
-                  <textarea value={formData.history} onChange={e => setFormData({ ...formData, history: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} placeholder="Past treatment notes..." />
+                  <RichTextEditor value={formData.history || ""} onChange={val => setFormData({ ...formData, history: val })} placeholder="Past treatment notes..." className="mt-1" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="text-xs font-medium text-stone-500">General Assessment (Parikshan)</label>
-                  <textarea value={formData.generalAssessment} onChange={e => setFormData({ ...formData, generalAssessment: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={2} />
+                  <RichTextEditor value={formData.generalAssessment || ""} onChange={val => setFormData({ ...formData, generalAssessment: val })} placeholder="General assessment details..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="text-xs font-medium text-stone-500">Treatment Plan (Ayurvedic)</label>
-                  <textarea value={formData.treatmentPlan} onChange={e => setFormData({ ...formData, treatmentPlan: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={3} />
+                  <RichTextEditor value={formData.treatmentPlan || ""} onChange={val => setFormData({ ...formData, treatmentPlan: val })} placeholder="Treatment plan details..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="text-xs font-medium text-stone-500">Treatment Days</label>
@@ -591,7 +613,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
               </div>
               <div>
                 <label className="text-xs font-medium text-stone-500">Notes / Treatment</label>
-                <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" rows={3} />
+                <RichTextEditor value={formData.notes || ""} onChange={val => setFormData({ ...formData, notes: val })} placeholder="Any specific details..." className="mt-1" />
               </div>
               <div className="w-1/2">
                 <label className="text-xs font-medium text-stone-500">Payment (₹)</label>
@@ -631,23 +653,23 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold text-amber-800 uppercase">Nadi Parikshan</label>
-                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.nadiParikshan || 'N/A'}</p>
+                      <div className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(selectedFollowUp.nadiParikshan) }} />
                     </div>
                     <div className="md:col-span-1">
                       <label className="text-xs font-semibold text-amber-800 uppercase">Lakshan</label>
-                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.lakshan || 'N/A'}</p>
+                      <div className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(selectedFollowUp.lakshan) }} />
                     </div>
                     <div className="md:col-span-1">
                       <label className="text-xs font-semibold text-amber-800 uppercase">History</label>
-                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.history || 'N/A'}</p>
+                      <div className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(selectedFollowUp.history) }} />
                     </div>
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold text-amber-800 uppercase">General Assessment</label>
-                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.generalAssessment || 'N/A'}</p>
+                      <div className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(selectedFollowUp.generalAssessment) }} />
                     </div>
                     <div className="md:col-span-1">
                       <label className="text-xs font-semibold text-amber-800 uppercase">Treatment Plan (Ayurvedic)</label>
-                      <p className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 whitespace-pre-wrap">{selectedFollowUp.treatmentPlan || 'N/A'}</p>
+                      <div className="text-sm text-stone-800 bg-white p-2 rounded mt-1 border border-amber-50 prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(selectedFollowUp.treatmentPlan) }} />
                     </div>
                     <div className="md:col-span-1">
                       <label className="text-xs font-semibold text-amber-800 uppercase">Treatment Days</label>
@@ -657,7 +679,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                 </div>
                 <div className="bg-emerald-50/30 p-4 rounded-md border border-emerald-100">
                   <label className="text-xs font-semibold text-emerald-800 uppercase">Notes & Treatment</label>
-                  <p className="text-sm text-stone-800 bg-white p-3 rounded mt-1 border border-emerald-50">{selectedFollowUp.notes || 'No notes provided.'}</p>
+                  <div className="text-sm text-stone-800 bg-white p-3 rounded mt-1 border border-emerald-50 prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(selectedFollowUp.notes) }} />
                 </div>
               </div>
             </div>

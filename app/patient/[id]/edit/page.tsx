@@ -6,6 +6,15 @@ import { getDocument, updateDocument, createDocument, queryDocuments, deleteDocu
 import { where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
+
+function formatDisplayHtml(text: string | undefined): string {
+  if (!text) return "N/A";
+  if (!/<[a-z][\s\S]*>/i.test(text)) {
+    return text.replace(/\n/g, '<br />');
+  }
+  return text;
+}
 
 export default function EditPatientPage({ params }: { params: { id: string } }) {
   const router = useRouter();
@@ -168,6 +177,14 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                   <input type="text" value={patient.address} onChange={e => setPatient({ ...patient, address: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-stone-700">Height (cm)</label>
+                  <input type="text" value={patient.height || ""} onChange={e => setPatient({ ...patient, height: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Weight (kg)</label>
+                  <input type="text" value={patient.weight || ""} onChange={e => setPatient({ ...patient, weight: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-stone-700">Job</label>
                   <input type="text" value={patient.job} onChange={e => setPatient({ ...patient, job: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
@@ -186,23 +203,23 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-stone-700">Nadi Parikshan</label>
-                  <textarea value={patient.nadiParikshan || ""} onChange={e => setPatient({ ...patient, nadiParikshan: e.target.value })} rows={5} placeholder="Pulse diagnosis details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <RichTextEditor value={patient.nadiParikshan || ""} onChange={val => setPatient({ ...patient, nadiParikshan: val })} placeholder="Pulse diagnosis details..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-stone-700">Condition (Lakshana)</label>
-                  <textarea value={patient.condition || ""} onChange={e => setPatient({ ...patient, condition: e.target.value })} rows={5} placeholder="Symptoms and signs..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <RichTextEditor value={patient.condition || ""} onChange={val => setPatient({ ...patient, condition: val })} placeholder="Symptoms and signs..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-stone-700">History</label>
-                  <textarea value={patient.history || ""} onChange={e => setPatient({ ...patient, history: e.target.value })} rows={5} placeholder="Past treatment notes, medical history, or related details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <RichTextEditor value={patient.history || ""} onChange={val => setPatient({ ...patient, history: val })} placeholder="Past treatment notes, medical history, or related details..." className="mt-1" />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-stone-700">General Assessment (Parikshan)</label>
-                  <textarea value={patient.parikshan || ""} onChange={e => setPatient({ ...patient, parikshan: e.target.value })} rows={5} placeholder="Mal, Mutra, Ksudha, Jivha, Nidra..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <RichTextEditor value={patient.parikshan || ""} onChange={val => setPatient({ ...patient, parikshan: val })} placeholder="Mal, Mutra, Ksudha, Jivha, Nidra..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-stone-700">Treatment Plan (Ayurvedic)</label>
-                  <textarea value={patient.treatmentPlan || ""} onChange={e => setPatient({ ...patient, treatmentPlan: e.target.value })} rows={5} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500 overflow-y-auto" />
+                  <RichTextEditor value={patient.treatmentPlan || ""} onChange={val => setPatient({ ...patient, treatmentPlan: val })} placeholder="Ayurvedic treatment plan details..." className="mt-1" />
                 </div>
                 <div className="md:col-span-1 space-y-4">
                   <div>
@@ -398,7 +415,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                               </Button>
                             </div>
                           </div>
-                          <p className="text-sm text-stone-600 bg-white p-2 rounded border border-stone-200 mt-2">{followUp.notes || "No notes."}</p>
+                          <div className="text-sm text-stone-600 bg-white p-2 rounded border border-stone-200 mt-2 prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(followUp.notes) }} />
                         </>
                       ) : (
                         <div className="space-y-4">
@@ -435,7 +452,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                           </div>
                           <div>
                             <label className="block text-xs font-medium text-stone-700">Notes</label>
-                            <textarea value={followUp.notes} onChange={e => setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, notes: e.target.value } : f))} rows={2} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-1.5 text-sm shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                            <RichTextEditor value={followUp.notes || ""} onChange={val => setFollowUps(followUps.map(f => f.id === followUp.id ? { ...f, notes: val } : f))} placeholder="Any notes..." className="mt-1" />
                           </div>
                         </div>
                       )}
@@ -474,7 +491,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Notes (Optional)</label>
-                  <textarea value={newFollowUp.notes} onChange={e => setNewFollowUp({ ...newFollowUp, notes: e.target.value })} rows={2} placeholder="Any specific details..." className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                  <RichTextEditor value={newFollowUp.notes || ""} onChange={val => setNewFollowUp({ ...newFollowUp, notes: val })} placeholder="Any specific details..." className="mt-1" />
                 </div>
               </div>
             </div>

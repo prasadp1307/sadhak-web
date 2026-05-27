@@ -81,7 +81,7 @@ export default function SadhakAyurvedApp() {
 
 
   // Form input states
-  const [newPatient, setNewPatient] = useState({ name: "", age: "", dob: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "" });
+  const [newPatient, setNewPatient] = useState({ name: "", age: "", dob: "", address: "", phoneNumber: "", job: "", reference: "", height: "", weight: "", symptoms: "", treatmentPlan: "" });
 
   const getTodayDate = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
   const getCurrentTimeRounded = () => {
@@ -130,6 +130,8 @@ export default function SadhakAyurvedApp() {
           phoneNumber: newPatient.phoneNumber,
           job: newPatient.job,
           reference: newPatient.reference,
+          height: newPatient.height || "",
+          weight: newPatient.weight || "",
           lastVisit: new Date().toISOString().split('T')[0],
           status: "Active"
         };
@@ -143,7 +145,7 @@ export default function SadhakAyurvedApp() {
         };
 
         setPatients([...patients, newPatientObj]);
-        setNewPatient({ name: "", age: "", dob: "", address: "", phoneNumber: "", job: "", reference: "", symptoms: "", treatmentPlan: "" });
+        setNewPatient({ name: "", age: "", dob: "", address: "", phoneNumber: "", job: "", reference: "", height: "", weight: "", symptoms: "", treatmentPlan: "" });
         setShowAddPatientForm(false);
       } catch (error) {
         console.error("Error adding patient:", error);
@@ -445,21 +447,39 @@ export default function SadhakAyurvedApp() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="patient-address">Address</Label>
-                <Input
-                  id="patient-address"
-                  placeholder="Enter address"
-                  value={newPatient.address}
-                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="patient-phone">Phone Number</Label>
                 <Input
                   id="patient-phone"
                   placeholder="Enter phone number"
                   value={newPatient.phoneNumber}
                   onChange={(e) => setNewPatient({ ...newPatient, phoneNumber: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="patient-height">Height (cm)</Label>
+                <Input
+                  id="patient-height"
+                  placeholder="Enter height in cm"
+                  value={newPatient.height}
+                  onChange={(e) => setNewPatient({ ...newPatient, height: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="patient-weight">Weight (kg)</Label>
+                <Input
+                  id="patient-weight"
+                  placeholder="Enter weight in kg"
+                  value={newPatient.weight}
+                  onChange={(e) => setNewPatient({ ...newPatient, weight: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="patient-address">Address</Label>
+                <Input
+                  id="patient-address"
+                  placeholder="Enter address"
+                  value={newPatient.address}
+                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
                 />
               </div>
               <div className="space-y-2">

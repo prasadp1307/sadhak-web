@@ -58,3 +58,13 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Rich Text Editor Placeholder and Styling */
+.rich-editor-content:empty::before {
+  content: attr(data-placeholder);
+  color: #a8a29e;
+  cursor: text;
+}
+.rich-editor-content {
+  min-height: 120px;
+}

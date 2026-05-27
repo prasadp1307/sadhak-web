@@ -64,6 +64,8 @@ export interface Patient extends FirestoreDocument {
   parikshan?: string;
   treatment_days?: number;
   history?: string;
+  height?: string;
+  weight?: string;
   // New Ayurvedic Assessment fields
 
   panchakarmaTherapies?: Array<{
