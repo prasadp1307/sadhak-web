@@ -17,6 +17,9 @@ import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { CalculatorWidget } from "./ui/CalculatorWidget";
+import { HealthCalculatorWidget } from "./ui/HealthCalculatorWidget";
+
 
 export default function SadhakAyurvedApp() {
   const { user } = useAuth();
@@ -1379,16 +1382,22 @@ export default function SadhakAyurvedApp() {
       </header>
 
       <div className="flex">
-        <aside className={`fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 transform border-r-2 border-amber-200 bg-gradient-to-b from-amber-50/50 via-orange-50/30 to-emerald-50/40 shadow-lg transition-transform duration-300 ease-in-out lg:relative lg:top-0 lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-          <nav className="relative z-10 space-y-2 p-4">
-            {navigationItems.map((item) => (
-              <button key={item.id} onClick={() => setActiveSection(item.id)} className={`flex w-full items-center space-x-3 rounded-lg px-4 py-3 transition-all ${activeSection === item.id ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-lg shadow-emerald-200" : "text-stone-700 hover:bg-gradient-to-r hover:from-amber-100 hover:to-orange-50"}`}>
-                <item.icon size={20} />
-                <span className="font-medium">{item.label}</span>
-                {activeSection === item.id && <ChevronRight className="ml-auto" size={16} />}
-              </button>
-            ))}
-          </nav>
+        <aside className={`fixed left-0 top-16 z-40 h-[calc(100vh-4rem)] w-64 transform border-r-2 border-amber-200 bg-gradient-to-b from-amber-50/50 via-orange-50/30 to-emerald-50/40 shadow-lg transition-transform duration-300 ease-in-out lg:relative lg:top-0 lg:translate-x-0 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col justify-between`}>
+          <div className="flex-1 overflow-y-auto">
+            <nav className="relative z-10 space-y-2 p-4">
+              {navigationItems.map((item) => (
+                <button key={item.id} onClick={() => setActiveSection(item.id)} className={`flex w-full items-center space-x-3 rounded-lg px-4 py-3 transition-all ${activeSection === item.id ? "bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-lg shadow-emerald-200" : "text-stone-700 hover:bg-gradient-to-r hover:from-amber-100 hover:to-orange-50"}`}>
+                  <item.icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                  {activeSection === item.id && <ChevronRight className="ml-auto" size={16} />}
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div className="bg-transparent space-y-1">
+            <CalculatorWidget />
+            <HealthCalculatorWidget />
+          </div>
         </aside>
 
         <main className="relative z-10 flex-1 overflow-auto p-6 lg:p-8">

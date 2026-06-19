@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDocument, updateDocument, createDocument, queryDocuments, deleteDocument, COLLECTIONS, Patient, FollowUp } from '@/lib/firestore-service';
+import { getDocument, updateDocument, createDocument, queryDocuments, deleteDocument, COLLECTIONS, Patient, FollowUp, Payment } from '@/lib/firestore-service';
 import { where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -50,8 +50,42 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
   }, [params.id]);
 
   const handleDeleteFollowUp = async (followUpId: string) => {
-    if (window.confirm("Are you sure you want to delete this follow-up record?")) {
+    if (window.confirm("Are you sure you want to delete this follow-up record? This will also update or delete the associated payment record.")) {
       try {
+        const followUpDoc = await getDocument<FollowUp>(COLLECTIONS.FOLLOW_UPS, followUpId);
+        if (followUpDoc) {
+          let paymentId = followUpDoc.paymentId;
+          if (!paymentId) {
+            const existingPayments = await queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [
+              where('followUpId', '==', followUpId)
+            ]);
+            if (existingPayments.length > 0) {
+              paymentId = existingPayments[0].id;
+            }
+          }
+
+          if (paymentId) {
+            const paymentDoc = await getDocument<Payment>(COLLECTIONS.PAYMENTS, paymentId);
+            if (paymentDoc) {
+              const otherCharges = (paymentDoc.medicineCharges || 0) + (paymentDoc.procedureCharges || 0) + (paymentDoc.panchakarmaCharges || 0) + (paymentDoc.extraCharges || 0);
+              if (otherCharges === 0) {
+                await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+              } else {
+                const paidAmount = Math.max(0, (paymentDoc.paidAmount || 0) - (followUpDoc.paymentAmount || 0));
+                const totalAmount = otherCharges;
+                const balanceAmount = totalAmount - paidAmount;
+                await updateDocument(COLLECTIONS.PAYMENTS, paymentId, {
+                  consultingFee: 0,
+                  totalAmount,
+                  paidAmount,
+                  balanceAmount,
+                  followUpId: ''
+                });
+              }
+            }
+          }
+        }
+
         await deleteDocument(COLLECTIONS.FOLLOW_UPS, followUpId);
         setFollowUps(followUps.filter(f => f.id !== followUpId));
       } catch (error) {

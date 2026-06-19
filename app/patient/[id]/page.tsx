@@ -65,13 +65,36 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     const totalAmount = editPaymentForm.consultingFee + editPaymentForm.medicineCharges + editPaymentForm.procedureCharges + editPaymentForm.panchakarmaCharges + editPaymentForm.extraCharges;
     const balanceAmount = totalAmount - editPaymentForm.paidAmount;
     await updateDocument(COLLECTIONS.PAYMENTS, editingPayment.id, {...editPaymentForm, totalAmount, balanceAmount});
+    
+    // Sync back to Follow-Up
+    if (editingPayment.followUpId) {
+      await updateDocument(COLLECTIONS.FOLLOW_UPS, editingPayment.followUpId, {
+        paymentAmount: editPaymentForm.consultingFee
+      });
+      // Refresh follow-ups list
+      const followUpsData = await queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]);
+      setFollowUps(followUpsData);
+    }
+
     setPayments(payments.map(p => p.id === editingPayment.id ? {...p, ...editPaymentForm, totalAmount, balanceAmount} : p));
     setShowEditPayment(false);
   };
 
   const handleDeletePaymentClick = (p: Payment) => {
     if (confirm('Delete this payment? This cannot be undone.')) {
-      deleteDocument(COLLECTIONS.PAYMENTS, p.id).then(() => setPayments(payments.filter(x => x.id !== p.id)));
+      deleteDocument(COLLECTIONS.PAYMENTS, p.id).then(async () => {
+        // Sync back to Follow-Up
+        if (p.followUpId) {
+          await updateDocument(COLLECTIONS.FOLLOW_UPS, p.followUpId, {
+            paymentAmount: 0,
+            paymentId: ''
+          });
+          // Refresh follow-ups list
+          const followUpsData = await queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]);
+          setFollowUps(followUpsData);
+        }
+        setPayments(payments.filter(x => x.id !== p.id));
+      });
     }
   };
 
@@ -418,8 +441,12 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                 patientId={params.id}
                 followUps={followUps}
                 onFollowUpAdded={async () => {
-                  const data = await queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]);
-                  setFollowUps(data);
+                  const [fData, pData] = await Promise.all([
+                    queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]),
+                    queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [where('patientId', '==', params.id)])
+                  ]);
+                  setFollowUps(fData);
+                  setPayments(pData);
                 }}
               />
             </div>
@@ -479,7 +506,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
 }
 
 function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patientId: string, followUps: FollowUp[], onFollowUpAdded: () => void }) {
-  const [view, setView] = useState<'details' | 'add'>('add');
+  const [view, setView] = useState<'details' | 'add' | 'edit'>('add');
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -500,32 +527,199 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
     e.preventDefault();
     setLoading(true);
     try {
-      const followUpData: Omit<FollowUp, 'id' | 'createdAt' | 'updatedAt'> = {
-        patientId,
-        ...formData,
-        status: 'Completed',
-        reason: 'Follow-up'
-      };
-      await createDocument(COLLECTIONS.FOLLOW_UPS, followUpData);
-      onFollowUpAdded();
-      setFormData({
-        date: new Date().toISOString().split('T')[0],
-        time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
-        nadiParikshan: '',
-        lakshan: '',
-        generalAssessment: '',
-        paymentAmount: 0,
-        notes: '',
-        treatmentPlan: '',
-        treatment_days: undefined,
-        history: ''
-      });
-      alert('Follow-up recorded successfully');
+      if (view === 'edit' && selectedFollowUp) {
+        // Edit existing follow-up
+        const updatedFollowUpData: Partial<FollowUp> = {
+          date: formData.date,
+          time: formData.time,
+          nadiParikshan: formData.nadiParikshan,
+          lakshan: formData.lakshan,
+          generalAssessment: formData.generalAssessment,
+          paymentAmount: formData.paymentAmount,
+          notes: formData.notes,
+          treatmentPlan: formData.treatmentPlan,
+          treatment_days: formData.treatment_days,
+          history: formData.history
+        };
+
+        let paymentId = selectedFollowUp.paymentId;
+        if (!paymentId) {
+          const existingPayments = await queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [
+            where('followUpId', '==', selectedFollowUp.id)
+          ]);
+          if (existingPayments.length > 0) {
+            paymentId = existingPayments[0].id;
+          }
+        }
+
+        const oldPaymentAmount = selectedFollowUp.paymentAmount || 0;
+        const newPaymentAmount = formData.paymentAmount || 0;
+
+        if (paymentId) {
+          const paymentDoc = await getDocument<Payment>(COLLECTIONS.PAYMENTS, paymentId);
+          if (paymentDoc) {
+            const otherCharges = (paymentDoc.medicineCharges || 0) + (paymentDoc.procedureCharges || 0) + (paymentDoc.panchakarmaCharges || 0) + (paymentDoc.extraCharges || 0);
+            if (otherCharges === 0 && newPaymentAmount === 0) {
+              await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+              updatedFollowUpData.paymentId = '';
+            } else {
+              const diff = newPaymentAmount - oldPaymentAmount;
+              const paidAmount = Math.max(0, (paymentDoc.paidAmount || 0) + diff);
+              const totalAmount = newPaymentAmount + otherCharges;
+              const balanceAmount = totalAmount - paidAmount;
+              await updateDocument(COLLECTIONS.PAYMENTS, paymentId, {
+                date: formData.date,
+                consultingFee: newPaymentAmount,
+                totalAmount,
+                paidAmount,
+                balanceAmount
+              });
+            }
+          } else {
+            if (newPaymentAmount > 0) {
+              const paymentData: Omit<Payment, 'id' | 'createdAt' | 'updatedAt'> = {
+                patientId,
+                date: formData.date,
+                consultingFee: newPaymentAmount,
+                medicineCharges: 0,
+                procedureCharges: 0,
+                panchakarmaCharges: 0,
+                extraCharges: 0,
+                totalAmount: newPaymentAmount,
+                paidAmount: newPaymentAmount,
+                balanceAmount: 0,
+                followUpId: selectedFollowUp.id
+              };
+              const newPaymentId = await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+              updatedFollowUpData.paymentId = newPaymentId;
+            }
+          }
+        } else if (newPaymentAmount > 0) {
+          const paymentData: Omit<Payment, 'id' | 'createdAt' | 'updatedAt'> = {
+            patientId,
+            date: formData.date,
+            consultingFee: newPaymentAmount,
+            medicineCharges: 0,
+            procedureCharges: 0,
+            panchakarmaCharges: 0,
+            extraCharges: 0,
+            totalAmount: newPaymentAmount,
+            paidAmount: newPaymentAmount,
+            balanceAmount: 0,
+            followUpId: selectedFollowUp.id
+          };
+          const newPaymentId = await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+          updatedFollowUpData.paymentId = newPaymentId;
+        }
+
+        await updateDocument(COLLECTIONS.FOLLOW_UPS, selectedFollowUp.id, updatedFollowUpData);
+        
+        setSelectedFollowUp({
+          ...selectedFollowUp,
+          ...updatedFollowUpData
+        } as FollowUp);
+
+        onFollowUpAdded();
+        alert('Follow-up updated successfully');
+        setView('details');
+      } else {
+        // Add new follow-up
+        const followUpData: Omit<FollowUp, 'id' | 'createdAt' | 'updatedAt'> = {
+          patientId,
+          ...formData,
+          status: 'Completed',
+          reason: 'Follow-up'
+        };
+        const followUpId = await createDocument(COLLECTIONS.FOLLOW_UPS, followUpData);
+        
+        if (formData.paymentAmount > 0) {
+          const paymentData: Omit<Payment, 'id' | 'createdAt' | 'updatedAt'> = {
+            patientId,
+            date: formData.date,
+            consultingFee: formData.paymentAmount,
+            medicineCharges: 0,
+            procedureCharges: 0,
+            panchakarmaCharges: 0,
+            extraCharges: 0,
+            totalAmount: formData.paymentAmount,
+            paidAmount: formData.paymentAmount,
+            balanceAmount: 0,
+            followUpId: followUpId
+          };
+          const paymentId = await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+          await updateDocument(COLLECTIONS.FOLLOW_UPS, followUpId, { paymentId });
+        }
+
+        onFollowUpAdded();
+        setFormData({
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          nadiParikshan: '',
+          lakshan: '',
+          generalAssessment: '',
+          paymentAmount: 0,
+          notes: '',
+          treatmentPlan: '',
+          treatment_days: undefined,
+          history: ''
+        });
+        alert('Follow-up recorded successfully');
+      }
     } catch (error) {
-      console.error("Error adding follow-up:", error);
-      alert('Failed to add follow-up');
+      console.error("Error saving follow-up:", error);
+      alert('Failed to save follow-up');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selectedFollowUp) return;
+    if (window.confirm("Are you sure you want to delete this follow-up record? This will also update/delete the associated payment record.")) {
+      setLoading(true);
+      try {
+        let paymentId = selectedFollowUp.paymentId;
+        if (!paymentId) {
+          const existingPayments = await queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [
+            where('followUpId', '==', selectedFollowUp.id)
+          ]);
+          if (existingPayments.length > 0) {
+            paymentId = existingPayments[0].id;
+          }
+        }
+
+        if (paymentId) {
+          const paymentDoc = await getDocument<Payment>(COLLECTIONS.PAYMENTS, paymentId);
+          if (paymentDoc) {
+            const otherCharges = (paymentDoc.medicineCharges || 0) + (paymentDoc.procedureCharges || 0) + (paymentDoc.panchakarmaCharges || 0) + (paymentDoc.extraCharges || 0);
+            if (otherCharges === 0) {
+              await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+            } else {
+              const paidAmount = Math.max(0, (paymentDoc.paidAmount || 0) - (selectedFollowUp.paymentAmount || 0));
+              const totalAmount = otherCharges;
+              const balanceAmount = totalAmount - paidAmount;
+              await updateDocument(COLLECTIONS.PAYMENTS, paymentId, {
+                consultingFee: 0,
+                totalAmount,
+                paidAmount,
+                balanceAmount,
+                followUpId: ''
+              });
+            }
+          }
+        }
+
+        await deleteDocument(COLLECTIONS.FOLLOW_UPS, selectedFollowUp.id);
+        setSelectedFollowUp(null);
+        setView('add');
+        onFollowUpAdded();
+        alert('Follow-up deleted successfully');
+      } catch (error) {
+        console.error("Error deleting follow-up:", error);
+        alert('Failed to delete follow-up');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -569,10 +763,19 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
 
       {/* Main Content: Form or Details */}
       <div className="lg:col-span-2">
-        {view === 'add' ? (
+        {view === 'add' || view === 'edit' ? (
           <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
-            <div className="border-b border-amber-100 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 -m-6 mb-6 rounded-t-lg">
-              <h3 className="text-stone-800 font-semibold">Log New Follow-Up</h3>
+            <div className={`border-b border-amber-100 bg-gradient-to-r ${view === 'edit' ? 'from-blue-50 to-teal-50' : 'from-emerald-50 to-teal-50'} p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center`}>
+              <h3 className="text-stone-800 font-semibold">{view === 'edit' ? `Edit Follow-Up - ${selectedFollowUp?.date}` : "Log New Follow-Up"}</h3>
+              {view === 'edit' && (
+                <button
+                  type="button"
+                  onClick={() => setView('details')}
+                  className="text-xs text-stone-500 hover:text-stone-700 bg-white border border-stone-300 px-2 py-1 rounded shadow-sm"
+                >
+                  Cancel Edit
+                </button>
+              )}
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -619,23 +822,56 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                 <label className="text-xs font-medium text-stone-500">Payment (₹)</label>
                 <input type="number" value={formData.paymentAmount} onChange={e => setFormData({ ...formData, paymentAmount: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
               </div>
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end pt-2 gap-2">
+                {view === 'edit' && (
+                  <button type="button" onClick={() => setView('details')} className="rounded-md border border-stone-300 bg-white px-6 py-2 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50 transition-all">
+                    Cancel
+                  </button>
+                )}
                 <button type="submit" disabled={loading} className="rounded-md bg-emerald-600 px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-all">
-                  {loading ? "Saving..." : "Save Follow-Up"}
+                  {loading ? "Saving..." : view === 'edit' ? "Save Changes" : "Save Follow-Up"}
                 </button>
               </div>
             </form>
           </div>
         ) : selectedFollowUp ? (
           <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
-            <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center">
+            <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center flex-wrap gap-2">
               <h3 className="text-stone-800 font-semibold">Entry Details - {selectedFollowUp.date}</h3>
-              <button
-                onClick={() => setView('add')}
-                className="text-stone-500 hover:text-stone-700 text-sm font-medium border border-stone-300 px-3 py-1 rounded bg-white shadow-sm"
-              >
-                Back to New Entry
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setFormData({
+                      date: selectedFollowUp.date,
+                      time: selectedFollowUp.time || '',
+                      nadiParikshan: selectedFollowUp.nadiParikshan || '',
+                      lakshan: selectedFollowUp.lakshan || '',
+                      generalAssessment: selectedFollowUp.generalAssessment || '',
+                      paymentAmount: selectedFollowUp.paymentAmount || 0,
+                      notes: selectedFollowUp.notes || '',
+                      treatmentPlan: selectedFollowUp.treatmentPlan || '',
+                      treatment_days: selectedFollowUp.treatment_days,
+                      history: selectedFollowUp.history || ''
+                    });
+                    setView('edit');
+                  }}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium border border-blue-200 px-3 py-1 rounded bg-blue-50 shadow-sm"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="text-red-600 hover:text-red-700 text-sm font-medium border border-red-200 px-3 py-1 rounded bg-red-50 shadow-sm"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setView('add')}
+                  className="text-stone-500 hover:text-stone-700 text-sm font-medium border border-stone-300 px-3 py-1 rounded bg-white shadow-sm"
+                >
+                  Back to New Entry
+                </button>
+              </div>
             </div>
             <div className="space-y-6 pt-2">
               <div className="flex justify-between items-start">

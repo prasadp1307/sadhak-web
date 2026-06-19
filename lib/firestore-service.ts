@@ -107,6 +107,7 @@ export interface FollowUp extends FirestoreDocument {
   treatmentPlan?: string;
   treatment_days?: number;
   history?: string;
+  paymentId?: string;
 }
 
 export interface Payment extends FirestoreDocument {
@@ -121,6 +122,7 @@ export interface Payment extends FirestoreDocument {
   paidAmount: number;
   balanceAmount: number;
   date: string;
+  followUpId?: string;
 }
 
 export interface Medicine extends FirestoreDocument {
