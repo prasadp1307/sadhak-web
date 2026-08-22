@@ -8,8 +8,9 @@ import { where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, LayoutDashboard } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { calculateBMI, formatDateToDDMMYYYY } from '@/lib/utils';
 
 function formatDisplayHtml(text: string | undefined): string {
   if (!text) return "N/A";
@@ -101,6 +102,8 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   const editTotal = editPaymentForm.consultingFee + editPaymentForm.medicineCharges + editPaymentForm.procedureCharges + editPaymentForm.panchakarmaCharges + editPaymentForm.extraCharges;
   const editBalance = editTotal - editPaymentForm.paidAmount;
 
+  const patientBmi = calculateBMI(patient?.height, patient?.weight);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/40 to-emerald-50/60 flex items-center justify-center">
@@ -132,7 +135,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/40 to-emerald-50/60">
       <header className="sticky top-0 z-50 border-b-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-emerald-50 shadow-lg backdrop-blur-sm">
         <div className="flex h-16 items-center justify-between px-4">
-          <div className="flex items-center space-x-4">
+          <Link href="/" className="flex items-center space-x-4 hover:opacity-90 transition-opacity">
             <div className="flex items-center space-x-3">
               <div className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-amber-400 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 shadow-lg">
                 <span className="text-amber-100 font-bold">S</span>
@@ -142,6 +145,14 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                 <p className="text-xs font-medium tracking-wide text-amber-700">Patient Details</p>
               </div>
             </div>
+          </Link>
+          <div className="flex items-center space-x-3">
+            <Link href="/">
+              <Button variant="outline" className="flex items-center gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50 shadow-sm font-semibold">
+                <LayoutDashboard className="h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -218,11 +229,11 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                       </div>
                       <div>
                         <label className="text-sm font-medium text-stone-500">Date of Birth</label>
-                        <p className="text-stone-700">{patient.dob || "N/A"}</p>
+                        <p className="text-stone-700">{formatDateToDDMMYYYY(patient.dob)}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-stone-500">Height</label>
-                        <p className="text-stone-700">{patient.height ? `${patient.height} cm` : "N/A"}</p>
+                        <p className="text-stone-700">{patient.height ? patient.height : "N/A"}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-stone-500">Phone</label>
@@ -231,6 +242,19 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                       <div>
                         <label className="text-sm font-medium text-stone-500">Weight</label>
                         <p className="text-stone-700">{patient.weight ? `${patient.weight} kg` : "N/A"}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-stone-500">BMI</label>
+                        {patientBmi ? (
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="font-bold text-stone-800 font-mono text-base">{patientBmi.bmiFormatted}</span>
+                            <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold border ${patientBmi.badgeClass}`}>
+                              {patientBmi.category}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-stone-700">N/A</p>
+                        )}
                       </div>
                       <div className="col-span-2">
                         <label className="text-sm font-medium text-stone-500">Address</label>
@@ -255,16 +279,16 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium text-stone-500">Symptoms</label>
-                      <p className="text-stone-700">{patient.symptoms}</p>
+                      <div className="text-stone-700 whitespace-pre-wrap prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(patient.symptoms) }} />
                     </div>
                     <div>
                       <label className="text-sm font-medium text-stone-500">Treatment Plan</label>
-                      <p className="text-stone-700">{patient.treatmentPlan}</p>
+                      <div className="text-stone-700 whitespace-pre-wrap prose prose-stone max-w-none" dangerouslySetInnerHTML={{ __html: formatDisplayHtml(patient.treatmentPlan) }} />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium text-stone-500">Last Visit</label>
-                        <p className="text-stone-700">{patient.lastVisit || "N/A"}</p>
+                        <p className="text-stone-700">{formatDateToDDMMYYYY(patient.lastVisit)}</p>
                       </div>
                       <div>
                         <label className="text-sm font-medium text-stone-500">Status</label>
@@ -417,7 +441,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                       <tbody className="bg-white divide-y divide-stone-100">
                         {[...appointments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((apt) => (
                           <tr key={apt.id}>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700">{apt.date}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700">{formatDateToDDMMYYYY(apt.date)}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700">{apt.time}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700">{apt.type}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
@@ -462,6 +486,12 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           )}
 
           <div className="flex justify-end space-x-4 pt-4">
+            <Link href="/">
+              <button type="button" className="rounded-md border border-emerald-600 text-emerald-700 bg-emerald-50/50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 flex items-center gap-1.5 font-semibold">
+                <LayoutDashboard className="h-4 w-4" />
+                Dashboard
+              </button>
+            </Link>
             <button onClick={() => router.back()} className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
               Back
             </button>
@@ -749,7 +779,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                   onClick={() => { setSelectedFollowUp(followUp); setView('details'); }}
                   className={`p-3 cursor-pointer transition-colors ${selectedFollowUp?.id === followUp.id ? 'bg-emerald-50 border-l-4 border-emerald-500' : 'hover:bg-amber-50/30'}`}
                 >
-                  <p className="font-bold text-sm text-stone-800">{followUp.date}</p>
+                  <p className="font-bold text-sm text-stone-800">{formatDateToDDMMYYYY(followUp.date)}</p>
                   <div className="flex justify-between mt-1">
                     <span className="text-xs text-stone-500">{followUp.time || '--:--'}</span>
                     <span className="text-xs font-semibold text-emerald-600">₹{followUp.paymentAmount || 0}</span>
@@ -766,7 +796,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         {view === 'add' || view === 'edit' ? (
           <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
             <div className={`border-b border-amber-100 bg-gradient-to-r ${view === 'edit' ? 'from-blue-50 to-teal-50' : 'from-emerald-50 to-teal-50'} p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center`}>
-              <h3 className="text-stone-800 font-semibold">{view === 'edit' ? `Edit Follow-Up - ${selectedFollowUp?.date}` : "Log New Follow-Up"}</h3>
+              <h3 className="text-stone-800 font-semibold">{view === 'edit' ? `Edit Follow-Up - ${formatDateToDDMMYYYY(selectedFollowUp?.date)}` : "Log New Follow-Up"}</h3>
               {view === 'edit' && (
                 <button
                   type="button"
@@ -837,7 +867,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         ) : selectedFollowUp ? (
           <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
             <div className="border-b border-amber-100 bg-gradient-to-r from-amber-50 to-orange-50 p-4 -m-6 mb-6 rounded-t-lg flex justify-between items-center flex-wrap gap-2">
-              <h3 className="text-stone-800 font-semibold">Entry Details - {selectedFollowUp.date}</h3>
+              <h3 className="text-stone-800 font-semibold">Entry Details - {formatDateToDDMMYYYY(selectedFollowUp.date)}</h3>
               <div className="flex gap-2">
                 <button
                   onClick={() => {
@@ -877,7 +907,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Date & Time</p>
-                  <p className="font-semibold text-stone-800">{selectedFollowUp.date} at {selectedFollowUp.time}</p>
+                  <p className="font-semibold text-stone-800">{formatDateToDDMMYYYY(selectedFollowUp.date)} at {selectedFollowUp.time}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Payment</p>
@@ -1052,7 +1082,7 @@ function PaymentTabContent({ patientId, payments, onPaymentAdded, onEditPayment,
               <tbody className="bg-white divide-y divide-stone-100">
                 {[...payments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((p: Payment) => (
                   <tr key={p.id}>
-                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 font-medium">{p.date}</td>
+                    <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 font-medium">{formatDateToDDMMYYYY(p.date)}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.consultingFee || 0}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.medicineCharges || 0}</td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-stone-700 text-right">₹{p.extraCharges || 0}</td>

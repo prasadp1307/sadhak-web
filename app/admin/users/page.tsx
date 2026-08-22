@@ -68,7 +68,9 @@ export default function UsersAdminPage() {
             <p className="text-gray-600 mt-2">View all registered users</p>
           </div>
           <Link href="/">
-            <Button variant="outline">← Back to Home</Button>
+            <Button variant="outline" className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-semibold">
+              ← Back to Dashboard
+            </Button>
           </Link>
         </div>
 

@@ -4,9 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getDocument, updateDocument, createDocument, queryDocuments, deleteDocument, COLLECTIONS, Patient, FollowUp, Payment } from '@/lib/firestore-service';
 import { where } from 'firebase/firestore';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Trash2, LayoutDashboard } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
+import { calculateBMI, formatDateToDDMMYYYY } from '@/lib/utils';
 
 function formatDisplayHtml(text: string | undefined): string {
   if (!text) return "N/A";
@@ -23,13 +25,8 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [newFollowUp, setNewFollowUp] = useState({
-    date: new Date().toISOString().split('T')[0],
-    time: new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-    reason: "",
-    notes: "",
-    status: "Pending" as const
-  });
+  const bmiData = calculateBMI(patient?.height, patient?.weight);
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,17 +111,6 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
       );
       await Promise.all(updatePromises);
 
-      if (newFollowUp.reason || newFollowUp.notes) {
-        const followUpData: Omit<FollowUp, 'id' | 'createdAt' | 'updatedAt'> = {
-          patientId: params.id,
-          date: newFollowUp.date,
-          time: newFollowUp.time,
-          reason: newFollowUp.reason,
-          notes: newFollowUp.notes,
-          status: newFollowUp.status
-        };
-        await createDocument(COLLECTIONS.FOLLOW_UPS, followUpData);
-      }
 
       router.push(`/patient/${params.id}`);
     } catch (error) {
@@ -158,7 +144,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50/40 to-emerald-50/60">
       <header className="sticky top-0 z-50 border-b-2 border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50 to-emerald-50 shadow-lg backdrop-blur-sm">
         <div className="flex h-16 items-center justify-between px-4">
-          <div className="flex items-center space-x-4">
+          <Link href="/" className="flex items-center space-x-4 hover:opacity-90 transition-opacity">
             <div className="flex items-center space-x-3">
               <div className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-amber-400 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 shadow-lg">
                 <svg className="h-5 w-5 text-amber-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,6 +156,14 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                 <p className="text-xs font-medium tracking-wide text-amber-700">Edit Patient</p>
               </div>
             </div>
+          </Link>
+          <div className="flex items-center space-x-3">
+            <Link href="/">
+              <Button variant="outline" className="flex items-center gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50 shadow-sm font-semibold">
+                <LayoutDashboard className="h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -203,12 +197,8 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                   <input type="date" value={patient.dob || ""} onChange={e => setPatient({ ...patient, dob: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Height (cm)</label>
-                  <input type="text" value={patient.height || ""} onChange={e => setPatient({ ...patient, height: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-stone-700">Address</label>
-                  <input type="text" value={patient.address} onChange={e => setPatient({ ...patient, address: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
+                  <label className="block text-sm font-medium text-stone-700">Height (cm / ft)</label>
+                  <input type="text" value={patient.height || ""} onChange={e => setPatient({ ...patient, height: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" placeholder="e.g. 172 or 5,8" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Phone Number</label>
@@ -216,15 +206,38 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Weight (kg)</label>
-                  <input type="text" value={patient.weight || ""} onChange={e => setPatient({ ...patient, weight: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                  <input type="text" value={patient.weight || ""} onChange={e => setPatient({ ...patient, weight: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" placeholder="e.g. 72.5" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700">Job</label>
                   <input type="text" value={patient.job} onChange={e => setPatient({ ...patient, job: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
                 <div>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-sm font-medium text-stone-700">BMI</label>
+                    <span className="text-xs text-emerald-700 font-semibold">Auto-calculated</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-2 rounded-md border border-amber-300 bg-gradient-to-r from-amber-50 via-orange-50/30 to-emerald-50 px-3 py-2 h-[42px] shadow-sm">
+                    {bmiData ? (
+                      <>
+                        <span className="text-lg font-black text-stone-800 font-mono">{bmiData.bmiFormatted}</span>
+                        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold border ${bmiData.badgeClass}`}>
+                          {bmiData.category}
+                        </span>
+                        <span className="text-xs font-medium text-stone-500 ml-auto">({bmiData.heightCm} cm)</span>
+                      </>
+                    ) : (
+                      <span className="text-sm italic text-stone-400">Calculates automatically...</span>
+                    )}
+                  </div>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-stone-700">Reference</label>
                   <input type="text" value={patient.reference} onChange={e => setPatient({ ...patient, reference: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-stone-700">Address</label>
+                  <input type="text" value={patient.address} onChange={e => setPatient({ ...patient, address: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" required />
                 </div>
               </div>
             </div>
@@ -437,7 +450,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                         <>
                           <div className="flex justify-between items-start mb-2">
                             <div>
-                              <span className="font-semibold text-stone-800 text-sm">{new Date(followUp.date).toLocaleDateString()}</span>
+                              <span className="font-semibold text-stone-800 text-sm">{formatDateToDDMMYYYY(followUp.date)}</span>
                               <p className="text-sm text-stone-700 mt-1">Reason: <span className="font-medium text-stone-800">{followUp.reason}</span></p>
                             </div>
                             <div className="flex items-center space-x-2">
@@ -454,7 +467,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                       ) : (
                         <div className="space-y-4">
                           <div className="flex justify-between items-center">
-                            <span className="font-semibold text-stone-800 text-sm">{followUp.date} (Pending)</span>
+                            <span className="font-semibold text-stone-800 text-sm">{formatDateToDDMMYYYY(followUp.date)} (Pending)</span>
                             <div className="flex items-center space-x-2">
                               <label className="text-sm text-stone-700">Status:</label>
                               <select
@@ -496,41 +509,14 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
               </div>
             )}
 
-            {/* Log New Follow-Up */}
-            <div className="border-amber-200 rounded-lg border bg-white p-6 shadow-sm">
-              <div className="border-b border-amber-100 bg-gradient-to-r from-orange-50 to-amber-50 p-4 -m-6 mb-6 rounded-t-lg">
-                <h3 className="text-stone-800 font-semibold">Log New Follow-Up</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Follow-Up Date</label>
-                    <input type="date" value={newFollowUp.date} onChange={e => setNewFollowUp({ ...newFollowUp, date: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Time</label>
-                    <input type="time" value={newFollowUp.time} onChange={e => setNewFollowUp({ ...newFollowUp, time: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700">Status</label>
-                    <select value={newFollowUp.status} onChange={e => setNewFollowUp({ ...newFollowUp, status: e.target.value as any })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500">
-                      <option value="Pending">Pending</option>
-                      <option value="Completed">Completed</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-stone-700">Reason for Follow-Up</label>
-                  <input type="text" placeholder="e.g. Check blood pressure, Review medication" value={newFollowUp.reason} onChange={e => setNewFollowUp({ ...newFollowUp, reason: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-stone-700">Notes (Optional)</label>
-                  <RichTextEditor value={newFollowUp.notes || ""} onChange={val => setNewFollowUp({ ...newFollowUp, notes: val })} placeholder="Any specific details..." className="mt-1" />
-                </div>
-              </div>
-            </div>
 
             <div className="flex justify-end space-x-4">
+              <Link href="/">
+                <button type="button" className="rounded-md border border-emerald-600 text-emerald-700 bg-emerald-50/50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 flex items-center gap-1.5 font-semibold">
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </button>
+              </Link>
               <button type="button" onClick={() => router.back()} className="rounded-md border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
                 Cancel
               </button>

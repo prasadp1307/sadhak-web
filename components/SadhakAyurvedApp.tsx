@@ -19,6 +19,7 @@ import {
 } from 'recharts';
 import { CalculatorWidget } from "./ui/CalculatorWidget";
 import { HealthCalculatorWidget } from "./ui/HealthCalculatorWidget";
+import { calculateBMI, formatDateToDDMMYYYY } from "@/lib/utils";
 
 
 export default function SadhakAyurvedApp() {
@@ -348,7 +349,7 @@ export default function SadhakAyurvedApp() {
                       <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                         {patient.status}
                       </span>
-                      <p className="mt-1 text-xs text-stone-500">{patient.lastVisit}</p>
+                      <p className="mt-1 text-xs text-stone-500">{formatDateToDDMMYYYY(patient.lastVisit)}</p>
                     </div>
                   </div>
                 ))}
@@ -424,7 +425,7 @@ export default function SadhakAyurvedApp() {
                 <Label htmlFor="patient-name">Name</Label>
                 <Input
                   id="patient-name"
-                  placeholder="Enter patient name"
+                  placeholder="Enter full name"
                   value={newPatient.name}
                   onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
                 />
@@ -450,10 +451,10 @@ export default function SadhakAyurvedApp() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="patient-height">Height (cm)</Label>
+                <Label htmlFor="patient-height">Height (cm / ft)</Label>
                 <Input
                   id="patient-height"
-                  placeholder="Enter height in cm"
+                  placeholder="e.g. 172 or 5,8"
                   value={newPatient.height}
                   onChange={(e) => setNewPatient({ ...newPatient, height: e.target.value })}
                 />
@@ -476,15 +477,6 @@ export default function SadhakAyurvedApp() {
                   onChange={(e) => setNewPatient({ ...newPatient, weight: e.target.value })}
                 />
               </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="patient-address">Address</Label>
-                <Input
-                  id="patient-address"
-                  placeholder="Enter address"
-                  value={newPatient.address}
-                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="patient-job">Job</Label>
                 <Input
@@ -495,12 +487,44 @@ export default function SadhakAyurvedApp() {
                 />
               </div>
               <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <Label>BMI</Label>
+                  <span className="text-xs text-emerald-700 font-semibold">Auto-calculated</span>
+                </div>
+                {(() => {
+                  const newBmi = calculateBMI(newPatient.height, newPatient.weight);
+                  return (
+                    <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-gradient-to-r from-amber-50 to-emerald-50 px-3 py-2 h-[40px]">
+                      {newBmi ? (
+                        <>
+                          <span className="text-base font-black text-stone-800 font-mono">{newBmi.bmiFormatted}</span>
+                          <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold border ${newBmi.badgeClass}`}>
+                            {newBmi.category}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-xs italic text-stone-400">Enter height & weight</span>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="patient-reference">Reference</Label>
                 <Input
                   id="patient-reference"
                   placeholder="Enter reference"
                   value={newPatient.reference}
                   onChange={(e) => setNewPatient({ ...newPatient, reference: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="patient-address">Address</Label>
+                <Input
+                  id="patient-address"
+                  placeholder="Enter address"
+                  value={newPatient.address}
+                  onChange={(e) => setNewPatient({ ...newPatient, address: e.target.value })}
                 />
               </div>
             </div>
@@ -564,7 +588,7 @@ export default function SadhakAyurvedApp() {
                       </td>
                       <td className="px-6 py-4 text-sm text-stone-700">{patient.job}</td>
                       <td className="px-6 py-4 text-sm text-stone-700">{patient.reference}</td>
-                      <td className="px-6 py-4 text-sm text-stone-600">{patient.lastVisit}</td>
+                      <td className="px-6 py-4 text-sm text-stone-600">{formatDateToDDMMYYYY(patient.lastVisit)}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                           {patient.status}
@@ -1283,7 +1307,7 @@ export default function SadhakAyurvedApp() {
                     return (
                       <tr key={payment.id} className="transition-colors hover:bg-stone-50">
                         <td className="px-6 py-4 font-medium text-stone-800">
-                          {new Date(payment.date).toLocaleDateString()}
+                          {formatDateToDDMMYYYY(payment.date)}
                         </td>
                         <td className="px-6 py-4">
                           <button
@@ -1337,7 +1361,7 @@ export default function SadhakAyurvedApp() {
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="rounded-lg p-2 text-stone-700 transition-colors hover:bg-white/50 lg:hidden">
               {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            <div className="flex items-center space-x-3">
+            <div onClick={() => setActiveSection("dashboard")} className="flex items-center space-x-3 cursor-pointer hover:opacity-90 transition-opacity">
               <div className="relative flex h-10 w-10 items-center justify-center rounded-full border-2 border-amber-400 bg-gradient-to-br from-emerald-600 via-teal-600 to-emerald-700 shadow-lg">
                 <Leaf className="h-5 w-5 text-amber-100" />
               </div>
@@ -1348,6 +1372,17 @@ export default function SadhakAyurvedApp() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            {activeSection !== "dashboard" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveSection("dashboard")}
+                className="hidden sm:flex items-center gap-1.5 border-emerald-600 text-emerald-700 hover:bg-emerald-50 shadow-sm font-semibold"
+              >
+                <Activity className="h-4 w-4" />
+                Back to Dashboard
+              </Button>
+            )}
             <div className="hidden lg:flex items-center space-x-2 rounded-lg bg-white/50 px-3 py-1.5 shadow-sm transition-all focus-within:ring-2 focus-within:ring-emerald-500/20">
               <Search size={16} className="text-stone-400" />
               <input
