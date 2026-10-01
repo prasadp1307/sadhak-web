@@ -161,9 +161,14 @@ export default function UsersAdminPage() {
                   </ol>
                 </div>
 
-                <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <h3 className="font-semibold text-yellow-900 mb-2">🔐 Dummy User Credentials:</h3>
-                  <div className="text-sm text-yellow-800 space-y-2">
+                <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <h3 className="font-semibold text-amber-900 mb-2">🔐 Showcase & Demo User Credentials:</h3>
+                  <div className="text-sm text-amber-900 space-y-3">
+                    <div className="p-3 bg-amber-100/70 rounded-md border border-amber-300 space-y-1.5">
+                      <p className="font-bold text-amber-950">🌟 Primary Showcase Demo Admin (Active & Verified):</p>
+                      <p>Email: <code className="bg-white px-1.5 py-0.5 rounded text-amber-900 font-mono font-bold">demo@sadhak.com</code> | Password: <code className="bg-white px-1.5 py-0.5 rounded text-amber-900 font-mono font-bold">Sadhak@2026</code></p>
+                      <p className="text-xs text-amber-800">Alternative Showcase Email: <code className="bg-white px-1 py-0.5 rounded font-mono">showcase@sadhak.com</code> or <code className="bg-white px-1 py-0.5 rounded font-mono">admin@sadhak.com</code></p>
+                    </div>
                     <div>
                       <p className="font-medium">User 1:</p>
                       <p>Email: user1@sadhak.com | Password: password123</p>

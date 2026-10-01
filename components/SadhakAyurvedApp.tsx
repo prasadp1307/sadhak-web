@@ -8,22 +8,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight, LogOut, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from './AuthProvider';
 import { logOut } from '../lib/auth';
 import { useRouter } from 'next/navigation';
-import { Patient, Appointment, Medicine, Treatment, Payment, COLLECTIONS, getAllDocuments, createDocument, deleteDocument } from '../lib/firestore-service';
+import { Patient, Appointment, Medicine, Treatment, Payment, FollowUp, getCollections, getAllDocuments, createDocument, deleteDocument, queryDocuments } from '../lib/firestore-service';
+import { where } from 'firebase/firestore';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { CalculatorWidget } from "./ui/CalculatorWidget";
 import { HealthCalculatorWidget } from "./ui/HealthCalculatorWidget";
-import { calculateBMI, formatDateToDDMMYYYY } from "@/lib/utils";
+import { calculateBMI, formatDateToDDMMYYYY, formatNextFollowPresentation, isDemoUserEmail, resolveNextFollow } from "@/lib/utils";
 
 
 export default function SadhakAyurvedApp() {
   const { user } = useAuth();
+  const isDemoUser = isDemoUserEmail(user?.email);
+  const cols = getCollections(isDemoUser);
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -40,6 +43,7 @@ export default function SadhakAyurvedApp() {
 
   // Dynamic state for patients
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
 
   // Dynamic state for appointments
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -51,14 +55,16 @@ export default function SadhakAyurvedApp() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [patientsData, appointmentsData, medicinesData, treatmentsData, paymentsData] = await Promise.all([
-          getAllDocuments<Patient>(COLLECTIONS.PATIENTS),
-          getAllDocuments<Appointment>(COLLECTIONS.APPOINTMENTS),
-          getAllDocuments<Medicine>(COLLECTIONS.MEDICINES),
-          getAllDocuments<Treatment>(COLLECTIONS.TREATMENTS),
-          getAllDocuments<Payment>(COLLECTIONS.PAYMENTS)
+        const [patientsData, followUpsData, appointmentsData, medicinesData, treatmentsData, paymentsData] = await Promise.all([
+          getAllDocuments<Patient>(cols.PATIENTS),
+          getAllDocuments<FollowUp>(cols.FOLLOW_UPS),
+          getAllDocuments<Appointment>(cols.APPOINTMENTS),
+          getAllDocuments<Medicine>(cols.MEDICINES),
+          getAllDocuments<Treatment>(cols.TREATMENTS),
+          getAllDocuments<Payment>(cols.PAYMENTS)
         ]);
         setPatients(patientsData);
+        setFollowUps(followUpsData);
         setAppointments(appointmentsData);
         setMedicines(medicinesData);
         setTreatments(treatmentsData);
@@ -68,7 +74,34 @@ export default function SadhakAyurvedApp() {
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
+
+  const followUpsByPatientId = useMemo(() => {
+    const map = new Map<string, FollowUp[]>();
+    for (const f of followUps) {
+      const list = map.get(f.patientId) ?? [];
+      list.push(f);
+      map.set(f.patientId, list);
+    }
+    return map;
+  }, [followUps]);
+
+  const appointmentsByPatientId = useMemo(() => {
+    const map = new Map<string, Appointment[]>();
+    for (const a of appointments) {
+      const list = map.get(a.patientId) ?? [];
+      list.push(a);
+      map.set(a.patientId, list);
+    }
+    return map;
+  }, [appointments]);
+
+  const getNextFollowForPatient = (patient: Patient) =>
+    resolveNextFollow(
+      patient,
+      followUpsByPatientId.get(patient.id),
+      appointmentsByPatientId.get(patient.id)
+    );
 
   // Dynamic state for medicines
   const [medicines, setMedicines] = useState<Medicine[]>([]);
@@ -137,9 +170,11 @@ export default function SadhakAyurvedApp() {
           height: newPatient.height || "",
           weight: newPatient.weight || "",
           lastVisit: new Date().toISOString().split('T')[0],
-          status: "Active"
+          status: "Active",
+          createdBy: user?.uid || "",
+          userId: user?.uid || ""
         };
-        const newId = await createDocument(COLLECTIONS.PATIENTS, patientData);
+        const newId = await createDocument(cols.PATIENTS, patientData);
 
         const newPatientObj: Patient = {
           id: newId,
@@ -167,10 +202,12 @@ export default function SadhakAyurvedApp() {
           patientName: newAppointment.patientName,
           type: newAppointment.type,
           duration: newAppointment.duration,
-          status: "Scheduled"
+          status: "Scheduled",
+          createdBy: user?.uid || "",
+          userId: user?.uid || ""
         };
-        const newId = await createDocument(COLLECTIONS.APPOINTMENTS, appointmentData);
-
+        const newId = await createDocument(cols.APPOINTMENTS, appointmentData);
+ 
         const appointment: Appointment = {
           id: newId,
           ...appointmentData
@@ -193,9 +230,11 @@ export default function SadhakAyurvedApp() {
           category: newMedicine.category,
           stock: parseInt(newMedicine.stock),
           lowStock: parseInt(newMedicine.stock) < 15,
-          price: newMedicine.price
+          price: newMedicine.price,
+          createdBy: user?.uid || "",
+          userId: user?.uid || ""
         };
-        const newId = await createDocument(COLLECTIONS.MEDICINES, medicineData);
+        const newId = await createDocument(cols.MEDICINES, medicineData);
         setMedicines([...medicines, { id: newId, ...medicineData }]);
         setNewMedicine({ name: "", category: "", stock: "", price: "" });
         setShowAddMedicineForm(false);
@@ -212,9 +251,11 @@ export default function SadhakAyurvedApp() {
           name: newTreatment.name,
           description: newTreatment.description,
           duration: newTreatment.duration,
-          category: newTreatment.category
+          category: newTreatment.category,
+          createdBy: user?.uid || "",
+          userId: user?.uid || ""
         };
-        const newId = await createDocument(COLLECTIONS.TREATMENTS, treatmentData);
+        const newId = await createDocument(cols.TREATMENTS, treatmentData);
         setTreatments([...treatments, { id: newId, ...treatmentData }]);
         setNewTreatment({ name: "", description: "", duration: "", category: "" });
         setShowAddTreatmentForm(false);
@@ -255,10 +296,12 @@ export default function SadhakAyurvedApp() {
         totalAmount,
         paidAmount: paymentDetails.paidAmount,
         balanceAmount,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        createdBy: user?.uid || "",
+        userId: user?.uid || ""
       };
 
-      await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+      await createDocument(cols.PAYMENTS, paymentData);
 
       // Update appointment status (requires updateDocument import or just local state update for now)
       setAppointments(appointments.map(app =>
@@ -349,7 +392,15 @@ export default function SadhakAyurvedApp() {
                       <span className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                         {patient.status}
                       </span>
-                      <p className="mt-1 text-xs text-stone-500">{formatDateToDDMMYYYY(patient.lastVisit)}</p>
+                      <p className="mt-1 text-xs text-stone-500">Last: {formatDateToDDMMYYYY(patient.lastVisit)}</p>
+                      {(() => {
+                        const nextFollow = formatNextFollowPresentation(getNextFollowForPatient(patient));
+                        return (
+                          <p className={`text-xs ${nextFollow.className}`}>
+                            Next follow: {nextFollow.label}
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
@@ -567,6 +618,7 @@ export default function SadhakAyurvedApp() {
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Job</th>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Reference</th>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Last Visit</th>
+                  <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Next Follow</th>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Status</th>
                   <th className="border-b border-amber-100 px-6 py-4 text-left text-sm font-semibold text-stone-700">Actions</th>
                 </tr>
@@ -589,6 +641,16 @@ export default function SadhakAyurvedApp() {
                       <td className="px-6 py-4 text-sm text-stone-700">{patient.job}</td>
                       <td className="px-6 py-4 text-sm text-stone-700">{patient.reference}</td>
                       <td className="px-6 py-4 text-sm text-stone-600">{formatDateToDDMMYYYY(patient.lastVisit)}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {(() => {
+                          const nextFollow = formatNextFollowPresentation(getNextFollowForPatient(patient));
+                          return (
+                            <span className={nextFollow.className} title={nextFollow.hint}>
+                              {nextFollow.label}
+                            </span>
+                          );
+                        })()}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${patient.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
                           {patient.status}
@@ -626,7 +688,7 @@ export default function SadhakAyurvedApp() {
   const handleDeleteAppointment = async (appointmentId: string) => {
     if (window.confirm("Are you sure you want to delete this appointment?")) {
       try {
-        await deleteDocument(COLLECTIONS.APPOINTMENTS, appointmentId);
+        await deleteDocument(cols.APPOINTMENTS, appointmentId);
         setAppointments(appointments.filter(a => a.id !== appointmentId));
       } catch (error) {
         console.error("Error deleting appointment:", error);
@@ -1091,7 +1153,7 @@ export default function SadhakAyurvedApp() {
   const handleDeletePayment = async (paymentId: string) => {
     if (window.confirm("Are you sure you want to delete this payment record? This action cannot be undone.")) {
       try {
-        await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+        await deleteDocument(cols.PAYMENTS, paymentId);
         setPayments(payments.filter(p => p.id !== paymentId));
       } catch (error) {
         console.error("Error deleting payment:", error);

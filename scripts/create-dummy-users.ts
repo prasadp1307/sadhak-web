@@ -1,3 +1,6 @@
+import * as dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
+
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 
@@ -15,8 +18,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-// Dummy users data
+// Dummy & Showcase users data
 const dummyUsers = [
+  {
+    email: 'admin@sadhak.com',
+    password: 'Sadhak@2026',
+    name: 'Showcase Demo Admin'
+  },
   {
     email: 'user1@sadhak.com',
     password: 'password123',

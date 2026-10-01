@@ -6,13 +6,16 @@
 npx tsx scripts/create-dummy-users.ts
 ```
 
-## 🔐 Test Credentials
+## 🔐 Test & Showcase Demo Credentials
 
-| Email | Password |
-|-------|----------|
-| user1@sadhak.com | password123 |
-| user2@sadhak.com | password123 |
-| user3@sadhak.com | password123 |
+| Email | Password | Role / Scope |
+|-------|----------|--------------|
+| **demo@sadhak.com** | `Sadhak@2026` | 🌟 **Showcase Demo Admin** (Active & Verified - Isolated Clean State) |
+| **showcase@sadhak.com** | `Sadhak@2026` | 🌟 **Showcase Demo Admin** (Active & Verified - Isolated Clean State) |
+| **admin@sadhak.com** | `Sadhak@2026` | 🌟 **Showcase Demo Admin** (Isolated Clean State) |
+| **user1@sadhak.com** | `password123` | Standard User |
+| **user2@sadhak.com** | `password123` | Standard User |
+| **user3@sadhak.com** | `password123` | Standard User |
 
 ## 🔍 View Users
 

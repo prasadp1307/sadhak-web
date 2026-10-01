@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDocument, updateDocument, createDocument, queryDocuments, deleteDocument, COLLECTIONS, Patient, FollowUp, Payment } from '@/lib/firestore-service';
+import { getDocument, updateDocument, createDocument, queryDocuments, deleteDocument, COLLECTIONS, getCollections, Patient, FollowUp, Payment } from '@/lib/firestore-service';
 import { where } from 'firebase/firestore';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Trash2, LayoutDashboard } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
-import { calculateBMI, formatDateToDDMMYYYY } from '@/lib/utils';
+import { calculateBMI, formatDateToDDMMYYYY, isDemoUserEmail } from '@/lib/utils';
+import { useAuth } from '@/components/AuthProvider';
 
 function formatDisplayHtml(text: string | undefined): string {
   if (!text) return "N/A";
@@ -19,6 +20,9 @@ function formatDisplayHtml(text: string | undefined): string {
 }
 
 export default function EditPatientPage({ params }: { params: { id: string } }) {
+  const { user } = useAuth();
+  const isDemoUser = isDemoUserEmail(user?.email);
+  const cols = getCollections(isDemoUser);
   const router = useRouter();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
@@ -32,8 +36,8 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
     const fetchData = async () => {
       try {
         const [data, followUpsData] = await Promise.all([
-          getDocument<Patient>(COLLECTIONS.PATIENTS, params.id),
-          queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)])
+          getDocument<Patient>(cols.PATIENTS, params.id),
+          queryDocuments<FollowUp>(cols.FOLLOW_UPS, [where('patientId', '==', params.id)])
         ]);
         setPatient(data);
         setFollowUps(followUpsData);
@@ -44,16 +48,16 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
       }
     };
     fetchData();
-  }, [params.id]);
+  }, [params.id, user]);
 
   const handleDeleteFollowUp = async (followUpId: string) => {
     if (window.confirm("Are you sure you want to delete this follow-up record? This will also update or delete the associated payment record.")) {
       try {
-        const followUpDoc = await getDocument<FollowUp>(COLLECTIONS.FOLLOW_UPS, followUpId);
+        const followUpDoc = await getDocument<FollowUp>(cols.FOLLOW_UPS, followUpId);
         if (followUpDoc) {
           let paymentId = followUpDoc.paymentId;
           if (!paymentId) {
-            const existingPayments = await queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [
+            const existingPayments = await queryDocuments<Payment>(cols.PAYMENTS, [
               where('followUpId', '==', followUpId)
             ]);
             if (existingPayments.length > 0) {
@@ -62,16 +66,16 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
           }
 
           if (paymentId) {
-            const paymentDoc = await getDocument<Payment>(COLLECTIONS.PAYMENTS, paymentId);
+            const paymentDoc = await getDocument<Payment>(cols.PAYMENTS, paymentId);
             if (paymentDoc) {
               const otherCharges = (paymentDoc.medicineCharges || 0) + (paymentDoc.procedureCharges || 0) + (paymentDoc.panchakarmaCharges || 0) + (paymentDoc.extraCharges || 0);
               if (otherCharges === 0) {
-                await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+                await deleteDocument(cols.PAYMENTS, paymentId);
               } else {
                 const paidAmount = Math.max(0, (paymentDoc.paidAmount || 0) - (followUpDoc.paymentAmount || 0));
                 const totalAmount = otherCharges;
                 const balanceAmount = totalAmount - paidAmount;
-                await updateDocument(COLLECTIONS.PAYMENTS, paymentId, {
+                await updateDocument(cols.PAYMENTS, paymentId, {
                   consultingFee: 0,
                   totalAmount,
                   paidAmount,
@@ -83,7 +87,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
           }
         }
 
-        await deleteDocument(COLLECTIONS.FOLLOW_UPS, followUpId);
+        await deleteDocument(cols.FOLLOW_UPS, followUpId);
         setFollowUps(followUps.filter(f => f.id !== followUpId));
       } catch (error) {
         console.error("Error deleting follow-up:", error);
@@ -97,11 +101,11 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
 
     setSaving(true);
     try {
-      await updateDocument(COLLECTIONS.PATIENTS, params.id, patient);
+      await updateDocument(cols.PATIENTS, params.id, patient);
 
       // Update existing follow-ups that were pending and might have been edited
       const updatePromises = followUps.map(f =>
-        updateDocument(COLLECTIONS.FOLLOW_UPS, f.id, {
+        updateDocument(cols.FOLLOW_UPS, f.id, {
           notes: f.notes,
           reason: f.reason,
           status: f.status,
@@ -287,7 +291,7 @@ export default function EditPatientPage({ params }: { params: { id: string } }) 
                   <input type="date" value={patient.lastVisit || ""} onChange={e => setPatient({ ...patient, lastVisit: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700">Next Appointment Date</label>
+                  <label className="block text-sm font-medium text-stone-700">Next Follow Date</label>
                   <input type="date" value={patient.nextAppointmentDate || ""} onChange={e => setPatient({ ...patient, nextAppointmentDate: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500" />
                 </div>
               </div>

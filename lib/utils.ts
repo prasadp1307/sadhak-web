@@ -89,6 +89,181 @@ export function calculateBMI(heightStr: string | undefined, weightStr: string | 
   };
 }
 
+/** Minimal follow-up fields for resolving the next follow date (no Firestore import). */
+export interface FollowUpDateLike {
+  date: string;
+  time?: string;
+  status: string;
+}
+
+export interface NextFollowPatientLike {
+  nextAppointmentDate?: string;
+  lastVisit?: string;
+  treatment_days?: number;
+}
+
+export type NextFollowQuality = 'good' | 'bad';
+
+export type NextFollowSource =
+  | 'pending_follow_up'
+  | 'manual'
+  | 'appointment'
+  | 'inferred_treatment_days'
+  | 'none';
+
+export interface ResolvedNextFollow {
+  date?: string;
+  quality: NextFollowQuality;
+  source: NextFollowSource;
+}
+
+export interface AppointmentDateLike {
+  date: string;
+  status?: string;
+}
+
+function isPendingFollowUpStatus(status: string | undefined): boolean {
+  return String(status ?? '').trim().toLowerCase() === 'pending';
+}
+
+function normalizeYmd(date: string): string | undefined {
+  const trimmed = date.trim();
+  const ymd = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(trimmed);
+  if (!ymd) return undefined;
+  const [, yyyy, mm, dd] = ymd;
+  return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+}
+
+function todayYmdLocal(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function isCancelledAppointmentStatus(status: string | undefined): boolean {
+  const s = String(status ?? '').trim().toLowerCase();
+  return s === 'cancelled' || s === 'canceled';
+}
+
+function addDaysToYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  const yy = dt.getFullYear();
+  const mm = String(dt.getMonth() + 1).padStart(2, '0');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
+}
+
+function followUpDateTimeSortValue(date: string, time?: string): number {
+  const timePart = (time || '00:00').replace(/\s*(AM|PM)/i, '').trim();
+  const parsed = Date.parse(`${date}T${timePart}`);
+  if (!isNaN(parsed)) return parsed;
+  const ymd = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
+  if (ymd) return Date.UTC(Number(ymd[1]), Number(ymd[2]) - 1, Number(ymd[3]));
+  return 0;
+}
+
+/**
+ * Next follow (read-only, client-side — no backend):
+ * 1) Earliest pending follow-up
+ * 2) patient.nextAppointmentDate (Edit Patient)
+ * 3) Earliest upcoming appointment
+ * 4) lastVisit + treatment_days (estimate when nothing else is set)
+ */
+export function resolveNextFollow(
+  patient: NextFollowPatientLike,
+  followUps?: FollowUpDateLike[],
+  appointments?: AppointmentDateLike[]
+): ResolvedNextFollow {
+  const pending = (followUps ?? []).filter(
+    (f) => isPendingFollowUpStatus(f.status) && f.date?.trim()
+  );
+  if (pending.length > 0) {
+    const next = [...pending].sort(
+      (a, b) =>
+        followUpDateTimeSortValue(a.date, a.time) -
+        followUpDateTimeSortValue(b.date, b.time)
+    )[0];
+    const date = normalizeYmd(next.date) ?? next.date;
+    return { date, quality: 'good', source: 'pending_follow_up' };
+  }
+
+  const manual = patient.nextAppointmentDate?.trim();
+  if (manual) {
+    const date = normalizeYmd(manual) ?? manual;
+    return { date, quality: 'good', source: 'manual' };
+  }
+
+  const today = todayYmdLocal();
+  const upcoming = (appointments ?? [])
+    .filter((a) => a.date?.trim() && !isCancelledAppointmentStatus(a.status))
+    .map((a) => ({ ymd: normalizeYmd(a.date), raw: a.date }))
+    .filter((a): a is { ymd: string; raw: string } => Boolean(a.ymd && a.ymd >= today))
+    .sort((a, b) => a.ymd.localeCompare(b.ymd));
+
+  if (upcoming[0]?.ymd) {
+    return { date: upcoming[0].ymd, quality: 'good', source: 'appointment' };
+  }
+
+  const lastVisit = patient.lastVisit?.trim();
+  const treatmentDays = patient.treatment_days;
+  if (lastVisit && treatmentDays != null && treatmentDays > 0) {
+    const base = normalizeYmd(lastVisit);
+    if (base) {
+      return {
+        date: addDaysToYmd(base, treatmentDays),
+        quality: 'good',
+        source: 'inferred_treatment_days',
+      };
+    }
+  }
+
+  return { quality: 'bad', source: 'none' };
+}
+
+export function resolveNextFollowDate(
+  patient: NextFollowPatientLike,
+  followUps?: FollowUpDateLike[],
+  appointments?: AppointmentDateLike[]
+): string | undefined {
+  return resolveNextFollow(patient, followUps, appointments).date;
+}
+
+export function formatNextFollowPresentation(resolved: ResolvedNextFollow): {
+  label: string;
+  quality: NextFollowQuality;
+  className: string;
+  hint?: string;
+} {
+  if (!resolved.date) {
+    return {
+      label: 'N/A',
+      quality: 'bad',
+      className: 'text-amber-700 font-medium',
+      hint: 'Add pending follow-up or set Next Follow Date on Edit Patient',
+    };
+  }
+
+  const label = formatDateToDDMMYYYY(resolved.date);
+  if (resolved.source === 'inferred_treatment_days') {
+    return {
+      label,
+      quality: 'good',
+      className: 'text-teal-700 font-semibold',
+      hint: 'Estimated from last visit + treatment days',
+    };
+  }
+
+  return {
+    label,
+    quality: 'good',
+    className: 'text-emerald-800 font-semibold',
+  };
+}
+
 export function formatDateToDDMMYYYY(dateInput: string | Date | number | undefined | null): string {
   if (!dateInput) return "N/A";
 
@@ -120,6 +295,13 @@ export function formatDateToDDMMYYYY(dateInput: string | Date | number | undefin
   const year = d.getFullYear();
 
   return `${day}-${month}-${year}`;
+}
+
+export const DEMO_EMAILS = ['admin@sadhak.com', 'demo@sadhak.com', 'showcase@sadhak.com'];
+
+export function isDemoUserEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return DEMO_EMAILS.includes(email.toLowerCase());
 }
 
 

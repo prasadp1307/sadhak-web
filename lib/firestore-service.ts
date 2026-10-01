@@ -33,7 +33,21 @@ export const COLLECTIONS = {
   TREATMENTS: 'treatments',
 } as const;
 
-export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS];
+export const DEMO_COLLECTIONS = {
+  PATIENTS: 'demo_patients',
+  USERS: 'demo_users',
+  APPOINTMENTS: 'demo_appointments',
+  FOLLOW_UPS: 'demo_followUps',
+  PAYMENTS: 'demo_payments',
+  MEDICINES: 'demo_medicines',
+  TREATMENTS: 'demo_treatments',
+} as const;
+
+export const getCollections = (isDemo: boolean = false) => {
+  return isDemo ? DEMO_COLLECTIONS : COLLECTIONS;
+};
+
+export type CollectionName = typeof COLLECTIONS[keyof typeof COLLECTIONS] | typeof DEMO_COLLECTIONS[keyof typeof DEMO_COLLECTIONS];
 
 /**
  * Base interface for all Firestore documents
@@ -42,6 +56,8 @@ export interface FirestoreDocument {
   id: string;
   createdAt?: Date;
   updatedAt?: Date;
+  createdBy?: string;
+  userId?: string;
 }
 
 export interface Patient extends FirestoreDocument {

@@ -3,14 +3,16 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { getDocument, queryDocuments, createDocument, updateDocument, deleteDocument, COLLECTIONS, Patient, FollowUp, Payment, Appointment } from '@/lib/firestore-service';
+import { getDocument, queryDocuments, createDocument, updateDocument, deleteDocument, COLLECTIONS, getCollections, Patient, FollowUp, Payment, Appointment } from '@/lib/firestore-service';
 import { where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Edit, Trash2, LayoutDashboard } from 'lucide-react';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
-import { calculateBMI, formatDateToDDMMYYYY } from '@/lib/utils';
+import { calculateBMI, formatDateToDDMMYYYY, formatNextFollowPresentation, isDemoUserEmail, resolveNextFollow } from '@/lib/utils';
+
+import { useAuth } from '@/components/AuthProvider';
 
 function formatDisplayHtml(text: string | undefined): string {
   if (!text) return "N/A";
@@ -22,6 +24,9 @@ function formatDisplayHtml(text: string | undefined): string {
 }
 
 export default function PatientDetailsPage({ params }: { params: { id: string } }) {
+  const { user } = useAuth();
+  const isDemoUser = isDemoUserEmail(user?.email);
+  const cols = getCollections(isDemoUser);
   const router = useRouter();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
@@ -37,10 +42,10 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     const fetchData = async () => {
       try {
         const [patientData, followUpData, paymentData, appointmentData] = await Promise.all([
-          getDocument<Patient>(COLLECTIONS.PATIENTS, params.id),
-          queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]),
-          queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [where('patientId', '==', params.id)]),
-          queryDocuments<Appointment>(COLLECTIONS.APPOINTMENTS, [where('patientId', '==', params.id)])
+          getDocument<Patient>(cols.PATIENTS, params.id),
+          queryDocuments<FollowUp>(cols.FOLLOW_UPS, [where('patientId', '==', params.id)]),
+          queryDocuments<Payment>(cols.PAYMENTS, [where('patientId', '==', params.id)]),
+          queryDocuments<Appointment>(cols.APPOINTMENTS, [where('patientId', '==', params.id)])
         ]);
         setPatient(patientData);
         setFollowUps(followUpData);
@@ -53,7 +58,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
       }
     };
     fetchData();
-  }, [params.id]);
+  }, [params.id, user]);
 
   const handleEditPaymentClick = (p: Payment) => {
     setEditingPayment(p);
@@ -65,15 +70,15 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
     if (!editingPayment) return;
     const totalAmount = editPaymentForm.consultingFee + editPaymentForm.medicineCharges + editPaymentForm.procedureCharges + editPaymentForm.panchakarmaCharges + editPaymentForm.extraCharges;
     const balanceAmount = totalAmount - editPaymentForm.paidAmount;
-    await updateDocument(COLLECTIONS.PAYMENTS, editingPayment.id, {...editPaymentForm, totalAmount, balanceAmount});
+    await updateDocument(cols.PAYMENTS, editingPayment.id, {...editPaymentForm, totalAmount, balanceAmount});
     
     // Sync back to Follow-Up
     if (editingPayment.followUpId) {
-      await updateDocument(COLLECTIONS.FOLLOW_UPS, editingPayment.followUpId, {
+      await updateDocument(cols.FOLLOW_UPS, editingPayment.followUpId, {
         paymentAmount: editPaymentForm.consultingFee
       });
       // Refresh follow-ups list
-      const followUpsData = await queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]);
+      const followUpsData = await queryDocuments<FollowUp>(cols.FOLLOW_UPS, [where('patientId', '==', params.id)]);
       setFollowUps(followUpsData);
     }
 
@@ -83,15 +88,15 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
 
   const handleDeletePaymentClick = (p: Payment) => {
     if (confirm('Delete this payment? This cannot be undone.')) {
-      deleteDocument(COLLECTIONS.PAYMENTS, p.id).then(async () => {
+      deleteDocument(cols.PAYMENTS, p.id).then(async () => {
         // Sync back to Follow-Up
         if (p.followUpId) {
-          await updateDocument(COLLECTIONS.FOLLOW_UPS, p.followUpId, {
+          await updateDocument(cols.FOLLOW_UPS, p.followUpId, {
             paymentAmount: 0,
             paymentId: ''
           });
           // Refresh follow-ups list
-          const followUpsData = await queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]);
+          const followUpsData = await queryDocuments<FollowUp>(cols.FOLLOW_UPS, [where('patientId', '==', params.id)]);
           setFollowUps(followUpsData);
         }
         setPayments(payments.filter(x => x.id !== p.id));
@@ -103,6 +108,10 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   const editBalance = editTotal - editPaymentForm.paidAmount;
 
   const patientBmi = calculateBMI(patient?.height, patient?.weight);
+  const nextFollow = patient
+    ? resolveNextFollow(patient, followUps, appointments)
+    : { quality: 'bad' as const, source: 'none' as const };
+  const nextFollowDisplay = formatNextFollowPresentation(nextFollow);
 
   if (loading) {
     return (
@@ -191,7 +200,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           {activeTab === 'profile' && (
             <div className="space-y-6">
               {/* Stats Highlights */}
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
                 <div className="rounded-lg border border-amber-200 bg-white p-4 shadow-sm">
                   <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Total Billed</p>
                   <p className="mt-1 text-2xl font-bold text-stone-800">₹{payments.reduce((sum: number, p: Payment) => sum + p.totalAmount, 0)}</p>
@@ -204,7 +213,14 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                   <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Outstanding Bal.</p>
                   <p className="mt-1 text-2xl font-bold text-red-600">₹{payments.reduce((sum: number, p: Payment) => sum + p.balanceAmount, 0)}</p>
                 </div>
-                <div className="rounded-lg border border-amber-200 bg-white p-4 shadow-sm">
+                <div className={`rounded-lg border bg-white p-4 shadow-sm ${nextFollowDisplay.quality === 'bad' ? 'border-amber-300 bg-amber-50/40' : 'border-amber-200'}`}>
+                  <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Next Follow</p>
+                  <p className={`mt-1 text-2xl font-bold ${nextFollowDisplay.className}`}>{nextFollowDisplay.label}</p>
+                  {nextFollowDisplay.hint ? (
+                    <p className="mt-1 text-xs text-stone-500">{nextFollowDisplay.hint}</p>
+                  ) : null}
+                </div>
+                <div className="rounded-lg border border-amber-200 bg-white p-4 shadow-sm col-span-2 md:col-span-1">
                   <p className="text-xs font-medium text-stone-500 uppercase tracking-wider">Latest Note</p>
                   <p className="mt-1 text-sm font-medium text-stone-700 truncate line-clamp-2">
                     {[...followUps].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]?.notes || "No notes"}
@@ -289,6 +305,13 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                       <div>
                         <label className="text-sm font-medium text-stone-500">Last Visit</label>
                         <p className="text-stone-700">{formatDateToDDMMYYYY(patient.lastVisit)}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-stone-500">Next Follow</label>
+                        <p className={nextFollowDisplay.className}>{nextFollowDisplay.label}</p>
+                        {nextFollowDisplay.hint ? (
+                          <p className="text-xs text-stone-500 mt-0.5">{nextFollowDisplay.hint}</p>
+                        ) : null}
                       </div>
                       <div>
                         <label className="text-sm font-medium text-stone-500">Status</label>
@@ -466,8 +489,8 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                 followUps={followUps}
                 onFollowUpAdded={async () => {
                   const [fData, pData] = await Promise.all([
-                    queryDocuments<FollowUp>(COLLECTIONS.FOLLOW_UPS, [where('patientId', '==', params.id)]),
-                    queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [where('patientId', '==', params.id)])
+                    queryDocuments<FollowUp>(cols.FOLLOW_UPS, [where('patientId', '==', params.id)]),
+                    queryDocuments<Payment>(cols.PAYMENTS, [where('patientId', '==', params.id)])
                   ]);
                   setFollowUps(fData);
                   setPayments(pData);
@@ -479,7 +502,7 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
           {activeTab === 'payments' && (
             <div className="space-y-6">
               <PaymentTabContent patientId={params.id} payments={payments} onPaymentAdded={() => {
-                queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [where('patientId', '==', params.id)])
+                queryDocuments<Payment>(cols.PAYMENTS, [where('patientId', '==', params.id)])
                   .then(setPayments);
               }} onEditPayment={handleEditPaymentClick} onDeletePayment={handleDeletePaymentClick} />
             </div>
@@ -536,6 +559,9 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
 }
 
 function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patientId: string, followUps: FollowUp[], onFollowUpAdded: () => void }) {
+  const { user } = useAuth();
+  const isDemoUser = isDemoUserEmail(user?.email);
+  const cols = getCollections(isDemoUser);
   const [view, setView] = useState<'details' | 'add' | 'edit'>('add');
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null);
   const [loading, setLoading] = useState(false);
@@ -574,7 +600,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
 
         let paymentId = selectedFollowUp.paymentId;
         if (!paymentId) {
-          const existingPayments = await queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [
+          const existingPayments = await queryDocuments<Payment>(cols.PAYMENTS, [
             where('followUpId', '==', selectedFollowUp.id)
           ]);
           if (existingPayments.length > 0) {
@@ -586,18 +612,18 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         const newPaymentAmount = formData.paymentAmount || 0;
 
         if (paymentId) {
-          const paymentDoc = await getDocument<Payment>(COLLECTIONS.PAYMENTS, paymentId);
+          const paymentDoc = await getDocument<Payment>(cols.PAYMENTS, paymentId);
           if (paymentDoc) {
             const otherCharges = (paymentDoc.medicineCharges || 0) + (paymentDoc.procedureCharges || 0) + (paymentDoc.panchakarmaCharges || 0) + (paymentDoc.extraCharges || 0);
             if (otherCharges === 0 && newPaymentAmount === 0) {
-              await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+              await deleteDocument(cols.PAYMENTS, paymentId);
               updatedFollowUpData.paymentId = '';
             } else {
               const diff = newPaymentAmount - oldPaymentAmount;
               const paidAmount = Math.max(0, (paymentDoc.paidAmount || 0) + diff);
               const totalAmount = newPaymentAmount + otherCharges;
               const balanceAmount = totalAmount - paidAmount;
-              await updateDocument(COLLECTIONS.PAYMENTS, paymentId, {
+              await updateDocument(cols.PAYMENTS, paymentId, {
                 date: formData.date,
                 consultingFee: newPaymentAmount,
                 totalAmount,
@@ -620,7 +646,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                 balanceAmount: 0,
                 followUpId: selectedFollowUp.id
               };
-              const newPaymentId = await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+              const newPaymentId = await createDocument(cols.PAYMENTS, paymentData);
               updatedFollowUpData.paymentId = newPaymentId;
             }
           }
@@ -638,11 +664,11 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
             balanceAmount: 0,
             followUpId: selectedFollowUp.id
           };
-          const newPaymentId = await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+          const newPaymentId = await createDocument(cols.PAYMENTS, paymentData);
           updatedFollowUpData.paymentId = newPaymentId;
         }
 
-        await updateDocument(COLLECTIONS.FOLLOW_UPS, selectedFollowUp.id, updatedFollowUpData);
+        await updateDocument(cols.FOLLOW_UPS, selectedFollowUp.id, updatedFollowUpData);
         
         setSelectedFollowUp({
           ...selectedFollowUp,
@@ -660,7 +686,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
           status: 'Completed',
           reason: 'Follow-up'
         };
-        const followUpId = await createDocument(COLLECTIONS.FOLLOW_UPS, followUpData);
+        const followUpId = await createDocument(cols.FOLLOW_UPS, followUpData);
         
         if (formData.paymentAmount > 0) {
           const paymentData: Omit<Payment, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -676,8 +702,8 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
             balanceAmount: 0,
             followUpId: followUpId
           };
-          const paymentId = await createDocument(COLLECTIONS.PAYMENTS, paymentData);
-          await updateDocument(COLLECTIONS.FOLLOW_UPS, followUpId, { paymentId });
+          const paymentId = await createDocument(cols.PAYMENTS, paymentData);
+          await updateDocument(cols.FOLLOW_UPS, followUpId, { paymentId });
         }
 
         onFollowUpAdded();
@@ -710,7 +736,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
       try {
         let paymentId = selectedFollowUp.paymentId;
         if (!paymentId) {
-          const existingPayments = await queryDocuments<Payment>(COLLECTIONS.PAYMENTS, [
+          const existingPayments = await queryDocuments<Payment>(cols.PAYMENTS, [
             where('followUpId', '==', selectedFollowUp.id)
           ]);
           if (existingPayments.length > 0) {
@@ -719,16 +745,16 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         }
 
         if (paymentId) {
-          const paymentDoc = await getDocument<Payment>(COLLECTIONS.PAYMENTS, paymentId);
+          const paymentDoc = await getDocument<Payment>(cols.PAYMENTS, paymentId);
           if (paymentDoc) {
             const otherCharges = (paymentDoc.medicineCharges || 0) + (paymentDoc.procedureCharges || 0) + (paymentDoc.panchakarmaCharges || 0) + (paymentDoc.extraCharges || 0);
             if (otherCharges === 0) {
-              await deleteDocument(COLLECTIONS.PAYMENTS, paymentId);
+              await deleteDocument(cols.PAYMENTS, paymentId);
             } else {
               const paidAmount = Math.max(0, (paymentDoc.paidAmount || 0) - (selectedFollowUp.paymentAmount || 0));
               const totalAmount = otherCharges;
               const balanceAmount = totalAmount - paidAmount;
-              await updateDocument(COLLECTIONS.PAYMENTS, paymentId, {
+              await updateDocument(cols.PAYMENTS, paymentId, {
                 consultingFee: 0,
                 totalAmount,
                 paidAmount,
@@ -739,7 +765,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
           }
         }
 
-        await deleteDocument(COLLECTIONS.FOLLOW_UPS, selectedFollowUp.id);
+        await deleteDocument(cols.FOLLOW_UPS, selectedFollowUp.id);
         setSelectedFollowUp(null);
         setView('add');
         onFollowUpAdded();
@@ -961,6 +987,9 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
 }
 
 function PaymentTabContent({ patientId, payments, onPaymentAdded, onEditPayment, onDeletePayment }: { patientId: string, payments: Payment[], onPaymentAdded: () => void, onEditPayment?: (p: Payment) => void, onDeletePayment?: (p: Payment) => void }) {
+  const { user } = useAuth();
+  const isDemoUser = isDemoUserEmail(user?.email);
+  const cols = getCollections(isDemoUser);
   const [formData, setFormData] = useState({
     consultingFee: 0,
     medicineCharges: 0,
@@ -985,7 +1014,7 @@ function PaymentTabContent({ patientId, payments, onPaymentAdded, onEditPayment,
         totalAmount,
         balanceAmount,
       };
-      await createDocument(COLLECTIONS.PAYMENTS, paymentData);
+      await createDocument(cols.PAYMENTS, paymentData);
       onPaymentAdded();
       setFormData({
         consultingFee: 0,
