@@ -8,9 +8,12 @@ import { where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Edit, Trash2, LayoutDashboard } from 'lucide-react';
+import { Edit, Trash2, LayoutDashboard, Download } from 'lucide-react';
+import { exportPatientDetailToExcel } from '@/lib/export-excel';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 import { calculateBMI, formatDateToDDMMYYYY, formatNextFollowPresentation, isDemoUserEmail, resolveNextFollow } from '@/lib/utils';
+import { formatShortRefId } from '@/lib/display-user';
+import { AppToast } from '@/components/ui/AppToast';
 
 import { useAuth } from '@/components/AuthProvider';
 
@@ -37,6 +40,13 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   const [showEditPayment, setShowEditPayment] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [editPaymentForm, setEditPaymentForm] = useState({date: '', consultingFee: 0, medicineCharges: 0, procedureCharges: 0, panchakarmaCharges: 0, extraCharges: 0, paidAmount: 0, notes: ''});
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -168,11 +178,24 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
 
       <main className="p-6">
         <div className="mx-auto max-w-4xl space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-3xl font-bold text-stone-800">{patient.name}</h2>
-              <p className="text-stone-600">Patient ID: #{patient.id}</p>
+              <p className="text-stone-600" title={patient.id}>
+                Ref: #{formatShortRefId(patient.id)}
+              </p>
             </div>
+            <Button
+              variant="outline"
+              className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-semibold"
+              onClick={() => {
+                exportPatientDetailToExcel(patient, followUps, payments, appointments);
+                setToast({ message: 'Patient file exported to Excel.', type: 'success' });
+              }}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export to Excel
+            </Button>
           </div>
 
           {/* Tab Navigation */}
@@ -366,6 +389,17 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
                       </div>
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-stone-500">Last Visit Date</label>
+                    <p className="text-stone-700">{patient.lastVisit ? formatDateToDDMMYYYY(patient.lastVisit) : "N/A"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-stone-500">Next Follow Date</label>
+                    <p className={`font-semibold ${nextFollowDisplay.className}`}>{nextFollowDisplay.label}</p>
+                    {nextFollowDisplay.hint ? (
+                      <p className="text-xs text-stone-500 mt-0.5">{nextFollowDisplay.hint}</p>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
@@ -486,14 +520,20 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
             <div className="space-y-6">
               <FollowUpTabContent
                 patientId={params.id}
+                patient={patient}
                 followUps={followUps}
+                appointments={appointments}
                 onFollowUpAdded={async () => {
-                  const [fData, pData] = await Promise.all([
+                  const [fData, pData, patientData, aptData] = await Promise.all([
                     queryDocuments<FollowUp>(cols.FOLLOW_UPS, [where('patientId', '==', params.id)]),
-                    queryDocuments<Payment>(cols.PAYMENTS, [where('patientId', '==', params.id)])
+                    queryDocuments<Payment>(cols.PAYMENTS, [where('patientId', '==', params.id)]),
+                    getDocument<Patient>(cols.PATIENTS, params.id),
+                    queryDocuments<Appointment>(cols.APPOINTMENTS, [where('patientId', '==', params.id)]),
                   ]);
                   setFollowUps(fData);
                   setPayments(pData);
+                  setAppointments(aptData);
+                  if (patientData) setPatient(patientData);
                 }}
               />
             </div>
@@ -527,6 +567,10 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
         </div>
       </main>
 
+      {toast && (
+        <AppToast message={toast.message} variant={toast.type} onDismiss={() => setToast(null)} />
+      )}
+
       {showEditPayment && editingPayment && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -558,7 +602,19 @@ export default function PatientDetailsPage({ params }: { params: { id: string } 
   );
 }
 
-function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patientId: string, followUps: FollowUp[], onFollowUpAdded: () => void }) {
+function FollowUpTabContent({
+  patientId,
+  patient,
+  followUps,
+  appointments,
+  onFollowUpAdded,
+}: {
+  patientId: string;
+  patient: Patient | null;
+  followUps: FollowUp[];
+  appointments: Appointment[];
+  onFollowUpAdded: () => void;
+}) {
   const { user } = useAuth();
   const isDemoUser = isDemoUserEmail(user?.email);
   const cols = getCollections(isDemoUser);
@@ -569,6 +625,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    nextFollowDate: '',
     nadiParikshan: '',
     lakshan: '',
     generalAssessment: '',
@@ -576,8 +633,63 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
     notes: '',
     treatmentPlan: '',
     treatment_days: undefined as number | undefined,
-    history: ''
+    history: '',
   });
+
+  useEffect(() => {
+    if (!patient) return;
+    const resolved = resolveNextFollow(patient, followUps, appointments).date;
+    setFormData((prev) => ({
+      ...prev,
+      nextFollowDate:
+        patient.nextAppointmentDate?.trim() || resolved || prev.nextFollowDate,
+      treatment_days: patient.treatment_days ?? prev.treatment_days,
+    }));
+  }, [
+    patient?.id,
+    patient?.nextAppointmentDate,
+    patient?.treatment_days,
+    followUps,
+    appointments,
+  ]);
+
+  const persistPatientScheduleFromForm = async () => {
+    const updates: Partial<Patient> = {
+      lastVisit: formData.date,
+    };
+    const nextDate = formData.nextFollowDate.trim();
+    if (nextDate) {
+      updates.nextAppointmentDate = nextDate;
+    }
+    if (formData.treatment_days != null && formData.treatment_days > 0) {
+      updates.treatment_days = formData.treatment_days;
+    }
+    await updateDocument(cols.PATIENTS, patientId, updates);
+
+    if (!nextDate) return;
+
+    const pending = followUps.filter(
+      (f) => String(f.status ?? '').trim().toLowerCase() === 'pending'
+    );
+    if (pending.length > 0) {
+      const earliest = [...pending].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      )[0];
+      await updateDocument(cols.FOLLOW_UPS, earliest.id, {
+        date: nextDate,
+        time: formData.time || earliest.time || '10:00',
+      });
+    } else {
+      await createDocument(cols.FOLLOW_UPS, {
+        patientId,
+        date: nextDate,
+        time: formData.time || '10:00',
+        status: 'Pending',
+        reason: 'Scheduled follow-up',
+        notes: '',
+      });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -669,7 +781,8 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         }
 
         await updateDocument(cols.FOLLOW_UPS, selectedFollowUp.id, updatedFollowUpData);
-        
+        await persistPatientScheduleFromForm();
+
         setSelectedFollowUp({
           ...selectedFollowUp,
           ...updatedFollowUpData
@@ -680,11 +793,12 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
         setView('details');
       } else {
         // Add new follow-up
+        const { nextFollowDate: _nextFollowDate, ...followUpFields } = formData;
         const followUpData: Omit<FollowUp, 'id' | 'createdAt' | 'updatedAt'> = {
           patientId,
-          ...formData,
+          ...followUpFields,
           status: 'Completed',
-          reason: 'Follow-up'
+          reason: 'Follow-up',
         };
         const followUpId = await createDocument(cols.FOLLOW_UPS, followUpData);
         
@@ -706,18 +820,21 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
           await updateDocument(cols.FOLLOW_UPS, followUpId, { paymentId });
         }
 
+        await persistPatientScheduleFromForm();
+
         onFollowUpAdded();
         setFormData({
           date: new Date().toISOString().split('T')[0],
           time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+          nextFollowDate: formData.nextFollowDate,
           nadiParikshan: '',
           lakshan: '',
           generalAssessment: '',
           paymentAmount: 0,
           notes: '',
           treatmentPlan: '',
-          treatment_days: undefined,
-          history: ''
+          treatment_days: formData.treatment_days,
+          history: '',
         });
         alert('Follow-up recorded successfully');
       }
@@ -837,11 +954,23 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-medium text-stone-500">Date</label>
-                  <input type="date" value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" required />
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                    required
+                  />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-stone-500">Time</label>
-                  <input type="time" value={formData.time} onChange={e => setFormData({ ...formData, time: e.target.value })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" required />
+                  <input
+                    type="time"
+                    value={formData.time}
+                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                    className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                    required
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -867,7 +996,28 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                 </div>
                 <div className="md:col-span-1">
                   <label className="text-xs font-medium text-stone-500">Treatment Days</label>
-                  <input type="number" value={formData.treatment_days || ""} onChange={e => setFormData({ ...formData, treatment_days: parseInt(e.target.value) || undefined })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" placeholder="Number of days" />
+                  <input
+                    type="number"
+                    value={formData.treatment_days || ''}
+                    onChange={(e) => {
+                      const treatment_days = parseInt(e.target.value, 10) || undefined;
+                      let nextFollowDate = formData.nextFollowDate;
+                      if (
+                        treatment_days &&
+                        treatment_days > 0 &&
+                        formData.date &&
+                        !nextFollowDate.trim()
+                      ) {
+                        const [y, m, d] = formData.date.split('-').map(Number);
+                        const dt = new Date(y, m - 1, d);
+                        dt.setDate(dt.getDate() + treatment_days);
+                        nextFollowDate = dt.toLocaleDateString('en-CA');
+                      }
+                      setFormData({ ...formData, treatment_days, nextFollowDate });
+                    }}
+                    className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                    placeholder="Number of days"
+                  />
                 </div>
               </div>
               <div>
@@ -877,6 +1027,27 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
               <div className="w-1/2">
                 <label className="text-xs font-medium text-stone-500">Payment (₹)</label>
                 <input type="number" value={formData.paymentAmount} onChange={e => setFormData({ ...formData, paymentAmount: Number(e.target.value) })} className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-stone-100">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Last Visit Date</label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700">Next Follow Date</label>
+                  <input
+                    type="date"
+                    value={formData.nextFollowDate}
+                    onChange={(e) => setFormData({ ...formData, nextFollowDate: e.target.value })}
+                    className="mt-1 block w-full rounded-md border border-stone-300 px-3 py-2 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-emerald-500"
+                  />
+                </div>
               </div>
               <div className="flex justify-end pt-2 gap-2">
                 {view === 'edit' && (
@@ -900,6 +1071,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                     setFormData({
                       date: selectedFollowUp.date,
                       time: selectedFollowUp.time || '',
+                      nextFollowDate: patient?.nextAppointmentDate?.trim() || '',
                       nadiParikshan: selectedFollowUp.nadiParikshan || '',
                       lakshan: selectedFollowUp.lakshan || '',
                       generalAssessment: selectedFollowUp.generalAssessment || '',
@@ -907,7 +1079,7 @@ function FollowUpTabContent({ patientId, followUps, onFollowUpAdded }: { patient
                       notes: selectedFollowUp.notes || '',
                       treatmentPlan: selectedFollowUp.treatmentPlan || '',
                       treatment_days: selectedFollowUp.treatment_days,
-                      history: selectedFollowUp.history || ''
+                      history: selectedFollowUp.history || '',
                     });
                     setView('edit');
                   }}

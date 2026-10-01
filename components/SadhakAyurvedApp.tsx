@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight, LogOut, Trash2 } from "lucide-react";
+import { Calendar, Users, ClipboardList, Leaf, Menu, X, Search, Bell, Settings, Plus, Eye, Edit, FileText, Activity, TrendingUp, Clock, Package, ChevronRight, LogOut, Trash2, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useState, useEffect, useMemo } from "react";
 import { useAuth } from './AuthProvider';
@@ -21,6 +21,13 @@ import {
 import { CalculatorWidget } from "./ui/CalculatorWidget";
 import { HealthCalculatorWidget } from "./ui/HealthCalculatorWidget";
 import { calculateBMI, formatDateToDDMMYYYY, formatNextFollowPresentation, isDemoUserEmail, resolveNextFollow } from "@/lib/utils";
+import {
+  exportAppointmentsToExcel,
+  exportMedicinesToExcel,
+  exportPatientsToExcel,
+  exportPaymentsReportToExcel,
+  exportTreatmentsToExcel,
+} from "@/lib/export-excel";
 
 
 export default function SadhakAyurvedApp() {
@@ -103,6 +110,33 @@ export default function SadhakAyurvedApp() {
       appointmentsByPatientId.get(patient.id)
     );
 
+  const getTodayDate = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+
+  const patientsById = useMemo(
+    () => new Map(patients.map((p) => [p.id, p])),
+    [patients]
+  );
+
+  /** Appointments whose patient has next follow-up due today (same rules as patient list). */
+  const appointmentsFollowUpDueToday = useMemo(() => {
+    const today = getTodayDate();
+    return appointments.filter((appointment) => {
+      const patient = patientsById.get(appointment.patientId);
+      if (!patient) return false;
+      const { date } = resolveNextFollow(
+        patient,
+        followUpsByPatientId.get(patient.id),
+        appointmentsByPatientId.get(patient.id)
+      );
+      return date === today;
+    });
+  }, [appointments, patientsById, followUpsByPatientId, appointmentsByPatientId]);
+
+  const appointmentMatchesSearch = (a: Appointment) =>
+    a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.date.includes(searchTerm);
+
   // Dynamic state for medicines
   const [medicines, setMedicines] = useState<Medicine[]>([]);
 
@@ -120,7 +154,6 @@ export default function SadhakAyurvedApp() {
   // Form input states
   const [newPatient, setNewPatient] = useState({ name: "", age: "", dob: "", address: "", phoneNumber: "", job: "", reference: "", height: "", weight: "", symptoms: "", treatmentPlan: "" });
 
-  const getTodayDate = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
   const getCurrentTimeRounded = () => {
     const d = new Date();
     d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15);
@@ -319,7 +352,14 @@ export default function SadhakAyurvedApp() {
 
   const dashboardStats = [
     { title: "Total Patients", value: patients.length.toString(), change: "+12% from last month", icon: Users, color: "text-emerald-600", bgColor: "bg-emerald-50" },
-    { title: "Today's Appointments", value: appointments.length.toString(), change: `${appointments.length} scheduled`, icon: Calendar, color: "text-amber-600", bgColor: "bg-amber-50" },
+    {
+      title: "Today's Appointments",
+      value: appointmentsFollowUpDueToday.length.toString(),
+      change: `${appointmentsFollowUpDueToday.length} follow-up due today`,
+      icon: Calendar,
+      color: "text-amber-600",
+      bgColor: "bg-amber-50",
+    },
     { title: "Active Treatments", value: patients.filter(p => p.status === "Active").length.toString(), change: "+5% this week", icon: Activity, color: "text-teal-600", bgColor: "bg-teal-50" },
     { title: "Medicine Stock", value: medicines.reduce((sum, m) => sum + m.stock, 0).toString(), change: `${medicines.filter(m => m.lowStock).length} items low stock`, icon: Package, color: "text-orange-600", bgColor: "bg-orange-50" },
   ];
@@ -417,12 +457,8 @@ export default function SadhakAyurvedApp() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-amber-50">
-              {appointments
-                .filter(a =>
-                  a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  a.date.includes(searchTerm)
-                )
+              {appointmentsFollowUpDueToday
+                .filter(appointmentMatchesSearch)
                 .map((appointment) => (
                   <div
                     key={appointment.id}
@@ -444,6 +480,15 @@ export default function SadhakAyurvedApp() {
                     </div>
                   </div>
                 ))}
+              {appointmentsFollowUpDueToday.filter(appointmentMatchesSearch).length === 0 && (
+                <div className="p-6 text-center">
+                  <p className="text-sm text-stone-500 italic">
+                    {searchTerm.trim()
+                      ? `No follow-ups due today matching "${searchTerm}".`
+                      : 'No appointments with follow-up due today.'}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -458,10 +503,28 @@ export default function SadhakAyurvedApp() {
           <h2 className="text-2xl font-bold text-stone-800">Patient Management</h2>
           <p className="text-sm text-stone-600">Total Patients: {patients.length}</p>
         </div>
-        <Button onClick={() => setShowAddPatientForm(true)} className="bg-emerald-600 text-white hover:bg-emerald-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Add New Patient
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const filtered = patients.filter(
+                (p) =>
+                  p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  p.phoneNumber.includes(searchTerm) ||
+                  p.id.toLowerCase().includes(searchTerm.toLowerCase())
+              );
+              exportPatientsToExcel(patients, followUps, appointments, filtered);
+            }}
+            className="border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button onClick={() => setShowAddPatientForm(true)} className="bg-emerald-600 text-white hover:bg-emerald-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Add New Patient
+          </Button>
+        </div>
       </div>
 
       {showAddPatientForm && (
@@ -703,10 +766,28 @@ export default function SadhakAyurvedApp() {
           <h2 className="text-2xl font-bold text-stone-800">Appointment Management</h2>
           <p className="text-sm text-stone-600">Total Appointments: {appointments.length}</p>
         </div>
-        <Button onClick={() => setShowAddAppointmentForm(true)} className="bg-teal-600 text-white hover:bg-teal-700">
-          <Plus className="mr-2 h-4 w-4" />
-          New Appointment
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              const filtered = appointments.filter(
+                (a) =>
+                  a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  a.date.includes(searchTerm)
+              );
+              exportAppointmentsToExcel(filtered);
+            }}
+            className="border-teal-600 text-teal-700 hover:bg-teal-50"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button onClick={() => setShowAddAppointmentForm(true)} className="bg-teal-600 text-white hover:bg-teal-700">
+            <Plus className="mr-2 h-4 w-4" />
+            New Appointment
+          </Button>
+        </div>
       </div>
 
       {showAddAppointmentForm && (
@@ -806,12 +887,8 @@ export default function SadhakAyurvedApp() {
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-4">
-            {appointments
-              .filter(a =>
-                a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                a.date.includes(searchTerm)
-              )
+            {appointmentsFollowUpDueToday
+              .filter(appointmentMatchesSearch)
               .map((appointment) => (
                 <div key={appointment.id} className="flex items-center justify-between rounded-lg border-2 border-emerald-100 bg-gradient-to-r from-emerald-50/50 to-teal-50/50 p-4">
                   <div className="flex items-center space-x-4">
@@ -845,13 +922,13 @@ export default function SadhakAyurvedApp() {
                   </div>
                 </div>
               ))}
-            {appointments.filter(a =>
-              a.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              a.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              a.date.includes(searchTerm)
-            ).length === 0 && (
+            {appointmentsFollowUpDueToday.filter(appointmentMatchesSearch).length === 0 && (
                 <div className="p-8 text-center bg-stone-50/50 rounded-lg border-2 border-dashed border-stone-200">
-                  <p className="text-stone-500 italic">No appointments found matching &quot;{searchTerm}&quot;</p>
+                  <p className="text-stone-500 italic">
+                    {searchTerm.trim()
+                      ? `No follow-ups due today matching "${searchTerm}".`
+                      : 'No appointments with follow-up due today.'}
+                  </p>
                 </div>
               )}
           </div>
@@ -920,10 +997,20 @@ export default function SadhakAyurvedApp() {
           <h2 className="text-2xl font-bold text-stone-800">Treatment Plans</h2>
           <p className="text-sm text-stone-600">Manage Ayurvedic treatment protocols</p>
         </div>
-        <Button onClick={() => setShowAddTreatmentForm(true)} className="bg-orange-600 text-white hover:bg-orange-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Create Treatment Plan
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportTreatmentsToExcel(treatments)}
+            className="border-orange-600 text-orange-700 hover:bg-orange-50"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button onClick={() => setShowAddTreatmentForm(true)} className="bg-orange-600 text-white hover:bg-orange-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Treatment Plan
+          </Button>
+        </div>
       </div>
 
       {showAddTreatmentForm && (
@@ -1048,10 +1135,20 @@ export default function SadhakAyurvedApp() {
           <h2 className="text-2xl font-bold text-stone-800">Medicine Inventory</h2>
           <p className="text-sm text-stone-600">Total Items: {medicines.length} | Low Stock: {medicines.filter(m => m.lowStock).length}</p>
         </div>
-        <Button onClick={() => setShowAddMedicineForm(true)} className="bg-green-600 text-white hover:bg-green-700">
-          <Plus className="mr-2 h-4 w-4" />
-          Add Medicine
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => exportMedicinesToExcel(medicines)}
+            className="border-green-600 text-green-700 hover:bg-green-50"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
+          <Button onClick={() => setShowAddMedicineForm(true)} className="bg-green-600 text-white hover:bg-green-700">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Medicine
+          </Button>
+        </div>
       </div>
 
       {showAddMedicineForm && (
@@ -1216,6 +1313,14 @@ export default function SadhakAyurvedApp() {
             <h2 className="text-2xl font-bold text-stone-800">Financial Reports & Analytics</h2>
             <p className="text-sm text-stone-600">Track revenue, outstandings, and payment distributions.</p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => exportPaymentsReportToExcel(payments, patients)}
+            className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 shrink-0"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Export Excel
+          </Button>
         </div>
 
         {/* Top Summary Cards */}
